@@ -1,0 +1,9 @@
+{
+    "API_URL_PROD": "https://api.example.com",
+    "API_URL_DEV": "http://localhost:3000",
+    "DEVELOPER_MODE": true,
+    "NOTIFICATIONS": {
+        "position": "top-right",
+        "theme": "dark"
+    }
+}
