@@ -38,10 +38,8 @@ export function AuthProvider({ children }) {
                 throw new Error(`User ID mismatch or user not found (Remote: ${response.data.user?.id}, Local: ${storedUserId})`);
             }
 
-
-            setUser(storedUserId);
+            setUser(response.data.user);
             setToken(storedToken);
-            setLoading(false);
         } catch (err) {
             console.error('Session check error:', err);
             setUser(null);
@@ -71,7 +69,7 @@ export function AuthProvider({ children }) {
                 throw new Error('Server didn\'t return token data');
             }
             setToken(response.data.token);
-            setUser(response.data.user.id);
+            setUser(response.data.user);
 
             //save user_id and token to local storage
             localStorage.setItem("token", response.data.token);
@@ -88,7 +86,7 @@ export function AuthProvider({ children }) {
     const logout = async () => {
         try {
             await axios.post(`${getAPIUrl()}/auth/logout`, {
-                user_id: user,
+                user_id: user.id,
                 token: token,
             }, {
                 headers: {
@@ -96,13 +94,15 @@ export function AuthProvider({ children }) {
                     'Accept': 'application/json',
                 }
             });
+        } catch (err) {
+            console.error('Logout error:', err);
+        } finally {
+            // The api is just to remove it from the server. If it fails, cleanup will deal with it later.
             setUser(null);
             setToken(null);
             localStorage.removeItem("token");
             localStorage.removeItem("user_id");
             navigate("/login");
-        } catch (err) {
-            console.error('Logout error:', err);
         }
     };
 
@@ -124,7 +124,7 @@ export function AuthProvider({ children }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, logout, register }}>
+        <AuthContext.Provider value={{ user, token, loading, login, logout, register }}>
             {children}
         </AuthContext.Provider>
     );

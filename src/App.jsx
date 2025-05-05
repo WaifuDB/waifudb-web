@@ -12,6 +12,7 @@ import RouteLogin from './routes/RouteLogin'
 import ProtectedRoute from './components/ProtectedRoute'
 import RouteLogout from './routes/RouteLogout'
 import RouteCreate from './routes/RouteCreate'
+import RouteWaifu from './routes/RouteWaifu'
 
 const theme = createTheme({
   palette: {
@@ -29,7 +30,8 @@ function App() {
     { path: '/register', element: <RouteRegister />, protected: false, },
     { path: '/login', element: <RouteLogin />, protected: false, },
     { path: '/logout', element: <RouteLogout />, protected: false, },
-    { path: '/create', element: <RouteCreate />, protected: false, },
+    { path: '/create', element: <RouteCreate />, protected: true, creator_only: true, },
+    { path: '/waifu/:id', element: <RouteWaifu />, protected: false, },
   ];
 
   const getRoute = (obj, is_child = false) => {
@@ -37,7 +39,7 @@ function App() {
       key={obj.path}
       path={obj.path}
       element={
-        obj.protected ? <ProtectedRoute>{obj.element}</ProtectedRoute> : obj.element
+        obj.protected ? <ProtectedRoute creator_only={obj.creator_only ?? false}>{obj.element}</ProtectedRoute> : obj.element
       }
     >
       {

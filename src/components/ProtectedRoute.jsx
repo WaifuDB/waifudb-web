@@ -1,7 +1,7 @@
 import { Navigate } from "react-router";
 import { useAuth } from "../providers/AuthProvider";
 
-function ProtectedRoute({ children }) {
+function ProtectedRoute({ creator_only, children }) {
     const { user, loading } = useAuth();
 
     if (loading) {
@@ -13,6 +13,10 @@ function ProtectedRoute({ children }) {
     if (!user) {
         // return <Navigate to="/login" replace />;
         return <div>Unauthorized</div>;
+    }
+
+    if (creator_only && !user.roles?.some(role => role.can_create)) {
+        return <div>Permission Denied</div>;
     }
 
     return children;
