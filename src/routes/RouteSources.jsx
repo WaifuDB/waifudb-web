@@ -56,17 +56,17 @@ function RouteSourcesList() {
     }
 
     return <>
-        <Typography variant="h5" component="h1" gutterBottom>Sources</Typography>
+        <Typography variant="h5" component="h1" gutterBottom>Sources ({Object.keys(data).length})</Typography>
         <Stack spacing={2}>
             {
                 Object.keys(data).map((key) => (
                     <div key={key}>
                         <Typography variant="h6" component="h2">{key}</Typography>
-                        <Stack direction="row" spacing={2}>
+                        <Stack direction="column" spacing={1}>
                             {
                                 data[key].map((source) => (
                                     <Link key={source.id} to={`/sources/${source.id}`} style={{ textDecoration: 'none' }}>
-                                        <Typography variant="body1" component="p">{source.name}</Typography>
+                                        <Typography variant="body1" component="p">{source.name} ({source.characters?.length})</Typography>
                                     </Link>
                                 ))
                             }

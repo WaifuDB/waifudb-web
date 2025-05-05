@@ -96,6 +96,9 @@ function RouteWaifus() {
                                     <Grid item size={{ sx: 12, md: 4 }}>
                                         {GetWaifuStat({ label: "Age", value: data.age ? <>
                                             <Chip label={data.age} size="small" color="primary" variant="outlined" sx={{ mr: 1 }} />
+                                            {
+                                                data.age < 18 ? <Chip label="Minor" size="small" color="error" variant="outlined" sx={{ mr: 1 }} /> : ''
+                                            }
                                             {getAgeRangeLabel(data.age)}
                                         </> : '' })}
                                     </Grid>
