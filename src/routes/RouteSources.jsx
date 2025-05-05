@@ -120,7 +120,7 @@ function RouteSourcesObject() {
                 <Grid container spacing={2}>
                     {
                         data.characters.map((character) => (
-                            <Grid item size={{md:2}} key={character.id}>
+                            <Grid item size={{ md: 2 }} key={character.id}>
                                 <Card elevation={2}>
                                     <CardActionArea
                                         component={Link}
@@ -131,8 +131,8 @@ function RouteSourcesObject() {
                                             component="img"
                                             image={character.image_url || "https://placehold.co/400"}
                                             alt={character.name}
-                                            sx={{ objectFit: 'cover' }}
-                                            style={{ width: '100%', height: 'auto', aspectRatio: '1 / 1' }}
+                                            sx={{ objectFit: 'cover', objectPosition: 'top', backgroundColor: '#f0f0f0' }}
+                                            style={{ width: '100%', height: 'auto', aspectRatio: '1 / 1.25' }}
                                         />
                                         <CardContent>
                                             <Typography variant="body1" component="div" gutterBottom>

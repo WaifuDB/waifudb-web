@@ -104,11 +104,21 @@ function WaifuEditor(props) {
 
             // return data;
             props?.onSubmit(data);
+
+            //add the source to the list if it doesn't exist
+            const sourceExists = sourceData.some(source => source.name === data.source);
+            if (!sourceExists) {
+                const newSource = {
+                    name: data.source,
+                    characters: [],
+                };
+                setSourceData([...sourceData, newSource]);
+            }
         } catch (err) {
             ShowNotification(err.message, "error");
             console.error(err);
         } finally {
-            reloadSources();
+            // reloadSources();
         }
     }
 

@@ -40,6 +40,12 @@ export function getBreastBandSize(bust, cup_size) {
         'F': 10,
         'FF': 12.5,
         'G': 15,
+        "H": 17.5,
+        'I': 20,
+        'J': 22.5,
+        'K': 25,
+        'L': 27.5,
+        'M': 30,
     };
 
     // Normalize cup size (accept 'dd' or 'DD')

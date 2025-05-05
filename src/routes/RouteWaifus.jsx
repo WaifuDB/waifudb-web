@@ -52,23 +52,7 @@ function RouteWaifus() {
         <>
             <Box>
                 <Container maxWidth="lg">
-                    {/* <h1>{data.name}</h1> */}
-                    {/* <img src={data.image_url} alt={data.name} style={{ width: '100%', height: 'auto' }} />
-                    <p><strong>JP Name:</strong> {data.jp_name}</p>
-                    <p><strong>Age:</strong> {data.age}</p>
-                    <p><strong>Birthplace:</strong> {data.birth_place}</p>
-                    <p><strong>Birthdate:</strong> {data.birth_date}</p>
-                    <p><strong>Height:</strong> {data.height}</p>
-                    <p><strong>Weight:</strong> {data.weight}</p>
-                    <p><strong>Bust:</strong> {data.bust}</p>
-                    <p><strong>Waist:</strong> {data.waist}</p>
-                    <p><strong>Hips:</strong> {data.hips}</p>
-                    <p><strong>Description:</strong> {data.description}</p>
-                    <p><strong>Source:</strong> {data.source}</p> */}
                     <Box>
-                        {/* <Typography variant="h6" component="h2" gutterBottom>
-                            {data.name}
-                        </Typography> */}
                         <Grid container spacing={2}>
                             <Grid size={3}>
                                 {/* big image (or grey if the url is null) */}
@@ -77,8 +61,9 @@ function RouteWaifus() {
                                         component="img"
                                         image={data.image_url || "https://placehold.co/400"}
                                         alt={data.name}
-                                        sx={{ objectFit: 'cover' }}
-                                        style={{ width: '100%', height: 'auto', aspectRatio: '1 / 1' }}
+                                        //show top side of the image
+                                        sx={{ objectFit: 'cover', objectPosition: 'top', backgroundColor: '#f0f0f0'  }}
+                                        style={{ width: '100%', height: 'auto', aspectRatio: '1 / 1.25' }}
                                     />
                                     <CardContent>
                                         <Typography variant="h5" component="div" gutterBottom>
