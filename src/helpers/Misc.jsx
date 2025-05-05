@@ -10,19 +10,17 @@ const usCupSizes = ['AA', 'A', 'B', 'C', 'D', 'DD', 'DDD/F', 'G', 'H', 'I', 'J',
 export function getCupSizeLabel(cupLetter) {
     const cup = cupLetter.toString().toUpperCase().trim();
 
-    // Validate input
-    if (!cup || !/^[A-Z]+$/.test(cup)) {
+    // Validate input (Japanese sizes are usually single letters, no AA/DD)
+    if (!cup || !/^[A-Z]$/.test(cup)) {
         return 'Invalid cup size';
     }
 
-    // Strict 5-label classification
-    if (['AAA', 'AA'].includes(cup)) return 'Flat';
-    if (['A', 'B'].includes(cup)) return 'Small';
+    // Japanese cup size classification (A = smallest, each letter = +1 cup)
+    if (cup === 'A') return 'Flat';
+    if (cup === 'B') return 'Small';
     if (['C', 'D'].includes(cup)) return 'Medium';
-    if (['DD', 'E', 'F'].includes(cup)) return 'Large';
-
-    // Everything else is Huge
-    return 'Huge';
+    if (['E', 'F', 'G'].includes(cup)) return 'Large';
+    return 'Huge'; // H+ and beyond
 }
 
 //Bust in cm
