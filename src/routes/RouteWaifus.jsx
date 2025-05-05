@@ -2,7 +2,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { getAPIUrl } from "../helpers/API";
-import { getAgeRangeLabel, getBodyType, getCupSizeLabel, ShowNotification } from "../helpers/Misc";
+import { getAgeRangeLabel, getBodyType, getBreastBandSize, getCupSizeLabel, getZodiacSign, ShowNotification } from "../helpers/Misc";
 import { Box, Button, Card, CardActions, CardContent, CardMedia, Chip, Container, Grid, Typography } from "@mui/material";
 import { useAuth } from "../providers/AuthProvider";
 
@@ -112,24 +112,29 @@ function RouteWaifus() {
                                         {GetWaifuStat({ label: "Birth Place", value: data.birth_place })}
                                     </Grid>
                                     <Grid item size={{ sx: 12, md: 6 }}>
-                                        {GetWaifuStat({ label: "Birth Date", value: data.birth_date })}
+                                        {GetWaifuStat({ label: "Birth Date", value: data.birth_date ? <>
+                                            {data.birth_date} ({getZodiacSign(data.birth_date)})
+                                        </> : '' })}
                                     </Grid>
-                                    <Grid item size={{ sx: 12, md: 4 }}>
+                                    <Grid item size={{ sx: 12, md: 3 }}>
                                         {GetWaifuStat({ label: "Age", value: data.age ? <>
                                             <Chip label={data.age} size="small" color="primary" variant="outlined" sx={{ mr: 1 }} />
                                             {getAgeRangeLabel(data.age)}
                                         </> : '' })}
                                     </Grid>
-                                    <Grid item size={{ sx: 12, md: 4 }}>
+                                    <Grid item size={{ sx: 12, md: 3 }}>
                                         {GetWaifuStat({ label: "Weight", value: data.weight ? `${data.weight}kg` : '' })}
                                     </Grid>
-                                    <Grid item size={{ sx: 12, md: 4 }}>
+                                    <Grid item size={{ sx: 12, md: 3 }}>
                                         {GetWaifuStat({ label: "Height", value: data.height ? `${data.height}cm` : '' })}
+                                    </Grid>
+                                    <Grid item size={{ sx: 12, md: 3 }}>
+                                        {GetWaifuStat({ label: "Blood Type", value: data.blood_type ? `${data.blood_type}` : '' })}
                                     </Grid>
                                     <Grid item size={{ sx: 12, md: 2 }}>
                                         {GetWaifuStat({ label: "Cup Size", value: data.cup_size ? <>
                                             <Chip label={getCupSizeLabel(data.cup_size)} size="small" color="primary" variant="outlined" sx={{ mr: 1 }} />
-                                            {data.bust ? data.bust : ''}{data.cup_size}
+                                            {data.bust ? getBreastBandSize(data.bust, data.cup_size) : ''}{data.cup_size}
                                         </> : '' })}
                                     </Grid>
                                     <Grid item size={{ sx: 12, md: 2 }}>

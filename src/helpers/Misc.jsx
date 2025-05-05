@@ -25,6 +25,42 @@ export function getCupSizeLabel(cupLetter) {
     return 'Huge';
 }
 
+//Bust in cm
+export function getBreastBandSize(bust, cup_size) {
+    // Cup size to cm difference mapping
+    const cupSizeMap = {
+        'AAA': -7.5,
+        'AA': -5,
+        'A': -2.5,
+        'B': 0,
+        'C': 2.5,
+        'D': 5,
+        'DD': 7.5,
+        'E': 7.5,
+        'F': 10,
+        'FF': 12.5,
+        'G': 15,
+    };
+
+    // Normalize cup size (accept 'dd' or 'DD')
+    const normalizedCupSize = cup_size.toUpperCase();
+
+    // Get the cm difference for the cup size
+    const cupDifference = cupSizeMap[normalizedCupSize];
+
+    if (cupDifference === undefined) {
+        throw new Error(`Invalid cup size. Must be one of: ${Object.keys(cupSizeMap).join(', ')}, but got ${cup_size}`);
+    }
+
+    // Calculate band size (bust size minus cup difference)
+    const bandSize = bust - cupDifference;
+
+    // Band sizes are typically even numbers (rounded to nearest even)
+    const roundedBandSize = Math.round(bandSize / 2) * 2;
+
+    return roundedBandSize;
+}
+
 export function getAgeRangeLabel(age) {
     if (age < 0) return 'Invalid age';
     if (age <= 12) return 'Child';
@@ -58,4 +94,37 @@ export function getBodyType(height, weight, bust, waist, hips) {
 export function getBMI(height, weight) {
     const heightM = height / 100;
     return weight / (heightM * heightM);
+}
+
+export function getZodiacSign(birthDate) {
+    //birth date is a string like "January 1"
+    const [month, day] = birthDate.split(' ');
+    const monthNumber = new Date(Date.parse(month + " 1, 2020")).getMonth() + 1; // January is 0, so add 1
+    const dayNumber = parseInt(day, 10);
+
+    const zodiacSigns = [
+        { name: "Capricorn", start: [12, 22], end: [1, 19] },
+        { name: "Aquarius", start: [1, 20], end: [2, 18] },
+        { name: "Pisces", start: [2, 19], end: [3, 20] },
+        { name: "Aries", start: [3, 21], end: [4, 19] },
+        { name: "Taurus", start: [4, 20], end: [5, 20] },
+        { name: "Gemini", start: [5, 21], end: [6, 20] },
+        { name: "Cancer", start: [6, 21], end: [7, 22] },
+        { name: "Leo", start: [7, 23], end: [8, 22] },
+        { name: "Virgo", start: [8, 23], end: [9, 22] },
+        { name: "Libra", start: [9, 23], end: [10, 22] },
+        { name: "Scorpio", start: [10, 23], end: [11, 21] },
+        { name: "Sagittarius", start: [11, 22], end: [12, 21] }
+    ];
+
+    for (const sign of zodiacSigns) {
+        const [startMonth, startDay] = sign.start;
+        const [endMonth, endDay] = sign.end;
+
+        if ((monthNumber === startMonth && dayNumber >= startDay) || (monthNumber === endMonth && dayNumber <= endDay)) {
+            return sign.name;
+        }
+    }
+
+    return "Unknown Zodiac Sign";
 }
