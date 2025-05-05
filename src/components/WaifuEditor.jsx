@@ -122,6 +122,20 @@ function WaifuEditor(props) {
         }
     }
 
+    const onPasteThreeSizes = (e) => {
+        const pastedData = e.clipboardData.getData('text');
+        //can expect the following format: Bxx-Wxx-Hxx (xx are numbers, can be any length)
+        const regex = /B(\d+)-W(\d+)-H(\d+)/;
+        const match = pastedData.match(regex);
+        if (match) {
+            const [_, bust, waist, hips] = match;
+            setInputBust(bust);
+            setInputWaist(waist);
+            setInputHips(hips);
+            e.preventDefault(); // Prevent the default paste action
+        }
+    }
+
     if (isLoading) {
         return <div>Loading...</div>;
     }
@@ -194,7 +208,7 @@ function WaifuEditor(props) {
                         />
                         <TextField
                             size='small'
-                            label="Cupsize Letter"
+                            label="Cupsize (JP)"
                             variant="outlined"
                             fullWidth
                             margin="normal"
@@ -210,6 +224,7 @@ function WaifuEditor(props) {
                             value={inputBust}
                             onChange={(e) => setInputBust(e.target.value)}
                             type="number"
+                            onPaste={onPasteThreeSizes}
                         />
                         <TextField
                             size='small'
@@ -220,6 +235,7 @@ function WaifuEditor(props) {
                             value={inputWaist}
                             onChange={(e) => setInputWaist(e.target.value)}
                             type="number"
+                            onPaste={onPasteThreeSizes}
                         />
                         <TextField
                             size='small'
@@ -230,6 +246,7 @@ function WaifuEditor(props) {
                             value={inputHips}
                             onChange={(e) => setInputHips(e.target.value)}
                             type="number"
+                            onPaste={onPasteThreeSizes}
                         />
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
