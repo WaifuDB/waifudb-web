@@ -11,8 +11,10 @@ import { ToastContainer } from 'react-toastify'
 import RouteLogin from './routes/RouteLogin'
 import ProtectedRoute from './components/ProtectedRoute'
 import RouteLogout from './routes/RouteLogout'
-import RouteCreate from './routes/RouteCreate'
-import RouteWaifu from './routes/RouteWaifu'
+import RouteWaifuCreate from './routes/RouteWaifuCreate'
+import RouteWaifus from './routes/RouteWaifus'
+import RouteSources from './routes/RouteSources'
+import RouteWaifuEdit from './routes/RouteWaifuEdit'
 
 const theme = createTheme({
   palette: {
@@ -30,8 +32,10 @@ function App() {
     { path: '/register', element: <RouteRegister />, protected: false, },
     { path: '/login', element: <RouteLogin />, protected: false, },
     { path: '/logout', element: <RouteLogout />, protected: false, },
-    { path: '/create', element: <RouteCreate />, protected: true, creator_only: true, },
-    { path: '/waifu/:id', element: <RouteWaifu />, protected: false, },
+    { path: '/create', element: <RouteWaifuCreate />, protected: true, creator_only: true, },
+    { path: '/sources/:id?', element: <RouteSources />, protected: false, },
+    { path: '/waifus/:id', element: <RouteWaifus />, protected: false, },
+    { path: '/waifus/:id/edit', element: <RouteWaifuEdit />, protected: true, creator_only: true, },
   ];
 
   const getRoute = (obj, is_child = false) => {

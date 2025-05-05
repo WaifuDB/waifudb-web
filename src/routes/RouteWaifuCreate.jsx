@@ -4,7 +4,7 @@ import { ShowNotification } from "../helpers/Misc";
 import { getAPIUrl } from "../helpers/API";
 import { useAuth } from "../providers/AuthProvider";
 
-function RouteCreate() {
+function RouteWaifuCreate() {
     const { user, token } = useAuth();
 
     const onSubmit = async (data) => {
@@ -57,4 +57,4 @@ function RouteCreate() {
     )
 }
 
-export default RouteCreate;
+export default RouteWaifuCreate;

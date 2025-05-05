@@ -16,6 +16,11 @@ export function AuthProvider({ children }) {
         checkSession();
     }, []);
 
+    const canCreate = () => {
+        if (!user) return false;
+        return user.roles?.some(role => role.can_create) || false;
+    }
+
     const checkSession = async () => {
         try {
             const storedToken = localStorage.getItem("token");
@@ -124,7 +129,7 @@ export function AuthProvider({ children }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, loading, login, logout, register }}>
+        <AuthContext.Provider value={{ user, token, loading, canCreate, login, logout, register }}>
             {children}
         </AuthContext.Provider>
     );

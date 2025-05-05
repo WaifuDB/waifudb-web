@@ -1,14 +1,16 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router";
+import { Link, useParams } from "react-router";
 import { getAPIUrl } from "../helpers/API";
-import { ShowNotification } from "../helpers/Misc";
-import { Box, Card, CardContent, CardMedia, Container, Grid, Typography } from "@mui/material";
+import { getCupSize, ShowNotification } from "../helpers/Misc";
+import { Box, Button, Card, CardActions, CardContent, CardMedia, Container, Grid, Typography } from "@mui/material";
+import { useAuth } from "../providers/AuthProvider";
 
-function RouteWaifu() {
+function RouteWaifus() {
     const [data, setData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const { id } = useParams();
+    const { canCreate } = useAuth();
 
     useEffect(() => {
         if (!id) {
@@ -82,6 +84,18 @@ function RouteWaifu() {
                                             {data.name}
                                         </Typography>
                                     </CardContent>
+                                    <CardActions>
+                                        {/* <Button size="small" color="primary">
+                                            Share
+                                        </Button> */}
+                                        {
+                                            canCreate() && (
+                                                <Button size="small" fullWidth color="primary" component={Link} to={`/waifus/${data.id}/edit`} variant="outlined">
+                                                    Edit
+                                                </Button>
+                                            )
+                                        }
+                                    </CardActions>
                                 </Card>
                             </Grid>
                             <Grid size={9}>
@@ -102,13 +116,13 @@ function RouteWaifu() {
                                         {GetWaifuStat({ label: "Height", value: data.height })}
                                     </Grid>
                                     <Grid item size={{ sx: 12, md: 4 }}>
-                                        {GetWaifuStat({ label: "Bust", value: data.bust })}
+                                        {GetWaifuStat({ label: "Bust", value: `${data.bust} (Cupsize ${getCupSize(data.bust, data.waist, data.hip)})` })}
                                     </Grid>
                                     <Grid item size={{ sx: 12, md: 4 }}>
                                         {GetWaifuStat({ label: "Waist", value: data.waist })}
                                     </Grid>
                                     <Grid item size={{ sx: 12, md: 4 }}>
-                                        {GetWaifuStat({ label: "Hips", value: data.hips })}
+                                        {GetWaifuStat({ label: "Hips", value: data.hip })}
                                     </Grid>
                                     <Grid item size={{ sx: 12 }}>
                                         {GetWaifuStat({ label: "Description", value: data.description })}
@@ -132,4 +146,4 @@ function GetWaifuStat({ label, value }) {
     );
 }
 
-export default RouteWaifu;
+export default RouteWaifus;

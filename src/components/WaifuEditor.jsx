@@ -24,6 +24,22 @@ function WaifuEditor(props) {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        if(props.prefill){
+            setInputName(props.prefill.name || '');
+            setInputJpName(props.prefill.jp_name || '');
+            setInputAge(props.prefill.age || '');
+            setInputImageUrl(props.prefill.image_url || '');
+            setInputBirthplace(props.prefill.birth_place || '');
+            setInputBirthdate(props.prefill.birth_date || '');
+            setInputHeight(props.prefill.height || '');
+            setInputWeight(props.prefill.weight || '');
+            setInputBust(props.prefill.bust || '');
+            setInputWaist(props.prefill.waist || '');
+            setInputHips(props.prefill.hip || '');
+            setInputDescription(props.prefill.description || '');
+            setInputSource(props.prefill.sources[0].name || '');
+        }
+
         (async () => {
             setIsLoading(true);
             try {
@@ -58,7 +74,7 @@ function WaifuEditor(props) {
             weight: inputWeight,
             bust: inputBust,
             waist: inputWaist,
-            hips: inputHips,
+            hip: inputHips,
             description: inputDescription,
             source: inputSource,
         }

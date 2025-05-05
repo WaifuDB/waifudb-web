@@ -8,6 +8,13 @@ function Header() {
     const [showMenu, setShowMenu] = useState(null);
     const { user } = useAuth();
 
+    const headerItems = [
+        {
+            name: 'Sources',
+            path: '/sources',
+        }
+    ]
+
     return (
         <Box>
             <AppBar position="static">
@@ -20,7 +27,13 @@ function Header() {
                         }}>WaifuDB</Typography>
                         <Box sx={{ display: { xs: 'none', sm: 'none', md: 'none', lg: 'block', flexGrow: 1 } }}>
                             <Stack direction="row" spacing={2}>
-
+                                {
+                                    headerItems.map((item, index) => (
+                                        <Button key={index} component={Link} to={item.path} color="inherit" sx={{ mr: 2 }}>
+                                            {item.name}
+                                        </Button>
+                                    ))
+                                }
                             </Stack>
                         </Box>
                         <Box sx={{ flexGrow: 0 }}>
