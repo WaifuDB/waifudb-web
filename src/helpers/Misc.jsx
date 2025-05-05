@@ -102,6 +102,13 @@ export function getBMI(height, weight) {
     return weight / (heightM * heightM);
 }
 
+export function getBMICategory(bmi) {
+    if (bmi < 18.5) return 'Underweight';
+    if (bmi < 24.9) return 'Normal weight';
+    if (bmi < 29.9) return 'Overweight';
+    return 'Obesity';
+}
+
 export function getZodiacSign(birthDate) {
     //birth date is a string like "January 1"
     const [month, day] = birthDate.split(' ');
