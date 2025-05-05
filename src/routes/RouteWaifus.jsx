@@ -2,8 +2,8 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { getAPIUrl } from "../helpers/API";
-import { getCupSize, ShowNotification } from "../helpers/Misc";
-import { Box, Button, Card, CardActions, CardContent, CardMedia, Container, Grid, Typography } from "@mui/material";
+import { getAgeRangeLabel, getBodyType, getCupSizeLabel, ShowNotification } from "../helpers/Misc";
+import { Box, Button, Card, CardActions, CardContent, CardMedia, Chip, Container, Grid, Typography } from "@mui/material";
 import { useAuth } from "../providers/AuthProvider";
 
 function RouteWaifus() {
@@ -33,6 +33,7 @@ function RouteWaifus() {
                 //update the ID section of the URL to ${waifuId}-${waifuData.name} (add dashes and lower in the name) without actually reloading the page
                 const newUrl = window.location.href.split('/').slice(0, -1).join('/') + '/' + waifuId + '-' + waifuData.name.toLowerCase().replace(/ /g, '-');
                 window.history.replaceState(null, '', newUrl);
+
                 setData(waifuData);
             } catch (error) {
                 ShowNotification(error.message, "error");
@@ -83,6 +84,13 @@ function RouteWaifus() {
                                         <Typography variant="h5" component="div" gutterBottom>
                                             {data.name}
                                         </Typography>
+                                        {
+                                            data.jp_name && (
+                                                <Typography variant="body1" gutterBottom>
+                                                    {data.jp_name}
+                                                </Typography>
+                                            )
+                                        }
                                     </CardContent>
                                     <CardActions>
                                         {/* <Button size="small" color="primary">
@@ -107,25 +115,44 @@ function RouteWaifus() {
                                         {GetWaifuStat({ label: "Birth Date", value: data.birth_date })}
                                     </Grid>
                                     <Grid item size={{ sx: 12, md: 4 }}>
-                                        {GetWaifuStat({ label: "Age", value: data.age })}
+                                        {GetWaifuStat({ label: "Age", value: data.age ? <>
+                                            <Chip label={data.age} size="small" color="primary" variant="outlined" sx={{ mr: 1 }} />
+                                            {getAgeRangeLabel(data.age)}
+                                        </> : '' })}
                                     </Grid>
                                     <Grid item size={{ sx: 12, md: 4 }}>
-                                        {GetWaifuStat({ label: "Weight", value: data.weight })}
+                                        {GetWaifuStat({ label: "Weight", value: data.weight ? `${data.weight}kg` : '' })}
                                     </Grid>
                                     <Grid item size={{ sx: 12, md: 4 }}>
-                                        {GetWaifuStat({ label: "Height", value: data.height })}
+                                        {GetWaifuStat({ label: "Height", value: data.height ? `${data.height}cm` : '' })}
                                     </Grid>
-                                    <Grid item size={{ sx: 12, md: 4 }}>
-                                        {GetWaifuStat({ label: "Bust", value: `${data.bust} (Cupsize ${getCupSize(data.bust, data.waist, data.hip)})` })}
+                                    <Grid item size={{ sx: 12, md: 2 }}>
+                                        {GetWaifuStat({ label: "Cup Size", value: data.cup_size ? <>
+                                            <Chip label={getCupSizeLabel(data.cup_size)} size="small" color="primary" variant="outlined" sx={{ mr: 1 }} />
+                                            {data.bust ? data.bust : ''}{data.cup_size}
+                                        </> : '' })}
                                     </Grid>
-                                    <Grid item size={{ sx: 12, md: 4 }}>
-                                        {GetWaifuStat({ label: "Waist", value: data.waist })}
+                                    <Grid item size={{ sx: 12, md: 2 }}>
+                                        {GetWaifuStat({ label: "Bust", value: data.bust ? `${data.bust}cm` : '' })}
                                     </Grid>
-                                    <Grid item size={{ sx: 12, md: 4 }}>
-                                        {GetWaifuStat({ label: "Hips", value: data.hip })}
+                                    <Grid item size={{ sx: 12, md: 2 }}>
+                                        {GetWaifuStat({ label: "Waist", value: data.waist ? `${data.waist}cm` : '' })}
                                     </Grid>
-                                    <Grid item size={{ sx: 12 }}>
+                                    <Grid item size={{ sx: 12, md: 2 }}>
+                                        {GetWaifuStat({ label: "Hips", value: data.hip ? `${data.hip}cm` : '' })}
+                                    </Grid>
+                                    <Grid item size={{ sx: 12, md: 2 }}>
+                                        {GetWaifuStat({ label: "Body Type", value: data.height && data.weight && data.bust && data.waist && data.hip
+                                            ? getBodyType(data.height, data.weight, data.bust, data.waist, data.hip) : '' })}
+                                    </Grid>
+                                    <Grid item size={{ md: 12 }}>
                                         {GetWaifuStat({ label: "Description", value: data.description })}
+                                    </Grid>
+                                    <Grid item size={{ md: 12 }}>
+                                        {GetWaifuStat({ label: "Sources", value: data.sources ? data.sources.map((source, index) => (
+                                            <Chip key={index} label={source.name} size="small" color="primary" variant="outlined" sx={{ mr: 1 }} component={Link} to={`/sources/${source.id}`} />
+                                        )) : ''
+                                        })}
                                     </Grid>
                                 </Grid>
                             </Grid>
@@ -141,7 +168,14 @@ function GetWaifuStat({ label, value }) {
     return (
         <>
             <Typography variant="body1" gutterBottom>{label}</Typography>
-            <Typography variant="body2" color="text.secondary">{value}</Typography>
+            {
+                value ? 
+                <Typography variant="body2" color="text.secondary">{value}</Typography>
+                : <Typography variant="body2" color="text.secondary" sx={{
+                    fontStyle: 'italic',
+                    color: 'gray',
+                }}>Not available</Typography>
+            }
         </>
     );
 }

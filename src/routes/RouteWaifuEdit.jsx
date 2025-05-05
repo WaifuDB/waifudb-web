@@ -24,6 +24,8 @@ function RouteWaifuEdit() {
                 image_url: data.image_url,
                 birth_place: data.birthplace,
                 birth_date: data.birthdate,
+                blood_type: data.blood_type,
+                cup_size: data.cup_size,
                 height: data.height,
                 weight: data.weight,
                 bust: data.bust,

@@ -19,9 +19,11 @@ function RouteWaifuCreate() {
                 birth_date: data.birthdate,
                 height: data.height,
                 weight: data.weight,
+                blood_type: data.blood_type,
+                cup_size: data.cup_size,
                 bust: data.bust,
                 waist: data.waist,
-                hips: data.hips,
+                hip: data.hip,
                 description: data.description,
                 source: data.source,
 

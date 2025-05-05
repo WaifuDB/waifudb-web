@@ -1,4 +1,4 @@
-import { Box, Button, Container, TextField } from "@mui/material";
+import { Autocomplete, Box, Button, Container, TextField } from "@mui/material";
 import { useEffect, useState } from "react";
 import { ShowNotification } from "../helpers/Misc";
 import axios from "axios";
@@ -13,6 +13,8 @@ function WaifuEditor(props) {
     const [inputBirthdate, setInputBirthdate] = useState('');
     const [inputHeight, setInputHeight] = useState('');
     const [inputWeight, setInputWeight] = useState('');
+    const [inputBloodType, setInputBloodType] = useState('');
+    const [inputCupsize, setInputCupsize] = useState('');
     const [inputBust, setInputBust] = useState('');
     const [inputWaist, setInputWaist] = useState('');
     const [inputHips, setInputHips] = useState('');
@@ -23,41 +25,52 @@ function WaifuEditor(props) {
 
     const [isLoading, setIsLoading] = useState(true);
 
+    const onPrefill = (data) => {
+        setInputName(data.name || '');
+        setInputJpName(data.jp_name || '');
+        setInputAge(data.age || '');
+        setInputImageUrl(data.image_url || '');
+        setInputBirthplace(data.birth_place || '');
+        setInputBirthdate(data.birth_date || '');
+        setInputHeight(data.height || '');
+        setInputWeight(data.weight || '');
+        setInputBloodType(data.blood_type || '');
+        setInputCupsize(data.cup_size || '');
+        setInputBust(data.bust || '');
+        setInputWaist(data.waist || '');
+        setInputHips(data.hip || '');
+        setInputDescription(data.description || '');
+        setInputSource(data.sources?.[0]?.name || '');
+    }
+
+    const reloadSources = async () => {
+        setIsLoading(true);
+        try {
+            const response = await axios.get(`${getAPIUrl()}/sources/get/all`);
+            if (response.status !== 200) {
+                throw new Error('Failed to fetch sources');
+            }
+            const sources = response.data;
+            if (!sources) {
+                throw new Error('No sources found');
+            }
+            setSourceData(sources);
+        } catch (error) {
+            ShowNotification(error.message, "error");
+            console.error('Error fetching sources:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
+
     useEffect(() => {
-        if(props.prefill){
-            setInputName(props.prefill.name || '');
-            setInputJpName(props.prefill.jp_name || '');
-            setInputAge(props.prefill.age || '');
-            setInputImageUrl(props.prefill.image_url || '');
-            setInputBirthplace(props.prefill.birth_place || '');
-            setInputBirthdate(props.prefill.birth_date || '');
-            setInputHeight(props.prefill.height || '');
-            setInputWeight(props.prefill.weight || '');
-            setInputBust(props.prefill.bust || '');
-            setInputWaist(props.prefill.waist || '');
-            setInputHips(props.prefill.hip || '');
-            setInputDescription(props.prefill.description || '');
-            setInputSource(props.prefill.sources[0].name || '');
+        if (props.prefill) {
+            onPrefill(props.prefill);
         }
 
         (async () => {
-            setIsLoading(true);
-            try {
-                const response = await axios.get(`${getAPIUrl()}/sources/get/all`);
-                if (response.status !== 200) {
-                    throw new Error('Failed to fetch sources');
-                }
-                const sources = response.data;
-                if (!sources) {
-                    throw new Error('No sources found');
-                }
-                setSourceData(sources);
-            } catch (error) {
-                ShowNotification(error.message, "error");
-                console.error('Error fetching sources:', error);
-            } finally {
-                setIsLoading(false);
-            }
+            reloadSources();
         })();
     }, []);
 
@@ -70,6 +83,8 @@ function WaifuEditor(props) {
             image_url: inputImageUrl,
             birthplace: inputBirthplace,
             birthdate: inputBirthdate,
+            blood_type: inputBloodType,
+            cup_size: inputCupsize,
             height: inputHeight,
             weight: inputWeight,
             bust: inputBust,
@@ -83,7 +98,7 @@ function WaifuEditor(props) {
                 throw new Error("Name must be at least 3 characters long.");
             }
 
-            if(data.source.length < 3){
+            if (data.source.length < 3) {
                 throw new Error("Source must be at least 3 characters long.");
             }
 
@@ -92,6 +107,8 @@ function WaifuEditor(props) {
         } catch (err) {
             ShowNotification(err.message, "error");
             console.error(err);
+        } finally {
+            reloadSources();
         }
     }
 
@@ -156,6 +173,24 @@ function WaifuEditor(props) {
                         />
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <TextField
+                            size='small'
+                            label="Blood Type"
+                            variant="outlined"
+                            fullWidth
+                            margin="normal"
+                            value={inputBloodType}
+                            onChange={(e) => setInputBloodType(e.target.value)}
+                        />
+                        <TextField
+                            size='small'
+                            label="Cupsize Letter"
+                            variant="outlined"
+                            fullWidth
+                            margin="normal"
+                            value={inputCupsize}
+                            onChange={(e) => setInputCupsize(e.target.value)}
+                        />
                         <TextField
                             size='small'
                             label="Bust"
@@ -223,37 +258,17 @@ function WaifuEditor(props) {
                         />
                     </Box>
                     <Box>
-                        {/* <TextField
+                        <Autocomplete
                             size='small'
-                            label="Source"
-                            variant="outlined"
+                            freeSolo
+                            options={sourceData.map((option) => option.name)}
+                            renderInput={(params) => <TextField {...params} label="Source" variant="outlined" margin="normal" />}
+                            value={inputSource}
+                            onChange={(e, newValue) => setInputSource(newValue)}
+                            onInputChange={(e, newValue) => setInputSource(newValue)}
                             fullWidth
                             margin="normal"
-                            value={inputSource}
-                            onChange={(e) => setInputSource(e.target.value)}
-                        /> */}
-                        {/* smart textfield with a dropdown */}
-                        <TextField
-                            size='small'
-                            label=""
-                            variant="outlined"
-                            fullWidth
-                            margin="normal"
-                            value={inputSource}
-                            onChange={(e) => setInputSource(e.target.value)}
-                            select
-                            SelectProps={{
-                                native: true,
-                            }}
-                            required
-                        >
-                            <option value="">Select a source</option>
-                            {sourceData.map((source) => (
-                                <option key={source.id} value={source.name}>
-                                    {source.name}
-                                </option>
-                            ))}
-                        </TextField>
+                        />
                     </Box>
                     <Box>
                         <TextField
@@ -268,6 +283,10 @@ function WaifuEditor(props) {
                     </Box>
 
                     <Button variant="contained" color="primary" fullWidth sx={{ mt: 2 }} onClick={onSubmit}>Submit</Button>
+                    {/* empty all fields */}
+                    <Button variant="outlined" color="secondary" fullWidth sx={{ mt: 2 }} onClick={() => {
+                        onPrefill({});
+                    }}>Clear</Button>
                 </Container>
             </Box>
         </>
