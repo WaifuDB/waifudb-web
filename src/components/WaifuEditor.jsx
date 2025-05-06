@@ -1,4 +1,4 @@
-import { Autocomplete, Box, Button, Container, TextField } from "@mui/material";
+import { Autocomplete, Box, Button, Container, FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
 import { useEffect, useState } from "react";
 import { ShowNotification } from "../helpers/Misc";
 import axios from "axios";
@@ -8,6 +8,7 @@ function WaifuEditor(props) {
     const [inputName, setInputName] = useState('');
     const [inputJpName, setInputJpName] = useState('');
     const [inputAge, setInputAge] = useState('');
+    const [inputGender, setInputGender] = useState('female');
     const [inputImageUrl, setInputImageUrl] = useState('');
     const [inputBirthplace, setInputBirthplace] = useState('');
     const [inputBirthdate, setInputBirthdate] = useState('');
@@ -29,6 +30,7 @@ function WaifuEditor(props) {
         setInputName(data.name || '');
         setInputJpName(data.jp_name || '');
         setInputAge(data.age || '');
+        setInputGender(data.gender || 'female');
         setInputImageUrl(data.image_url || '');
         setInputBirthplace(data.birth_place || '');
         setInputBirthdate(data.birth_date || '');
@@ -80,6 +82,7 @@ function WaifuEditor(props) {
             name: inputName,
             jp_name: inputJpName,
             age: inputAge,
+            gender: inputGender,
             image_url: inputImageUrl,
             birthplace: inputBirthplace,
             birthdate: inputBirthdate,
@@ -127,9 +130,19 @@ function WaifuEditor(props) {
         //can expect the following format: Bxx-Wxx-Hxx (xx are numbers, can be any length)
         let match = pastedData.match(/B(\d+)-W(\d+)-H(\d+)/);
 
-        if(!match){
+        if (!match) {
             //try xx-xx-xx (xx are numbers, can be any length)
             match = pastedData.match(/(\d+)-(\d+)-(\d+)/);
+        }
+
+        if (!match) {
+            //try Bxx/Wxx/Hxx (xx are numbers, can be any length)
+            match = pastedData.match(/B(\d+)\/W(\d+)\/H(\d+)/);
+        }
+
+        if (!match) {
+            //try xx/xx/xx (xx are numbers, can be any length)
+            match = pastedData.match(/(\d+)\/(\d+)\/(\d+)/);
         }
 
         let [bust, waist, hips] = [];
@@ -139,7 +152,7 @@ function WaifuEditor(props) {
             hips = match[3];
         }
 
-        if(bust && waist && hips){
+        if (bust && waist && hips) {
             setInputBust(bust);
             setInputWaist(waist);
             setInputHips(hips);
@@ -188,6 +201,26 @@ function WaifuEditor(props) {
                         />
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        {/* gender select dropdown (Male, Female, Non-Binary, Other) */}
+                        <FormControl
+                            size='small'
+                            fullWidth
+                            margin="normal"
+                            >
+                            <InputLabel>Gender</InputLabel>
+                            <Select
+                                fullWidth
+                                variant="outlined"
+                                onChange={(e) => setInputGender(e.target.value)}
+                                value={inputGender}
+                            >
+                                <MenuItem value={'male'}>Male</MenuItem>
+                                <MenuItem value={'female'}>Female</MenuItem>
+                                <MenuItem value={'non-binary'}>Non-Binary</MenuItem>
+                                <MenuItem value={'other'}>Other</MenuItem>
+                                <MenuItem value={'unknown'}>Unknown</MenuItem>
+                            </Select>
+                        </FormControl>
                         <TextField
                             size='small'
                             label="Birthplace"

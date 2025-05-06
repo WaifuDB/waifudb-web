@@ -2,15 +2,19 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { getAPIUrl } from "../helpers/API";
-import { getAgeRangeLabel, getBMI, getBMICategory, getBodyType, getBreastBandSize, getCupSizeLabel, getZodiacSign, ShowNotification } from "../helpers/Misc";
-import { Box, Button, Card, CardActions, CardContent, CardMedia, Chip, Container, Grid, Typography } from "@mui/material";
+import { getAgeRangeLabel, getBMI, getBMICategory, getBodyType, getBreastBandSize, getCupSizeLabel, getGenderLabel, getZodiacSign, MODAL_STYLE, ShowNotification } from "../helpers/Misc";
+import { Box, Button, Card, CardActions, CardContent, CardMedia, Chip, Container, Grid, IconButton, Modal, Paper, Typography } from "@mui/material";
 import { useAuth } from "../providers/AuthProvider";
+import AddIcon from '@mui/icons-material/Add';
+import WaifuRelationshipEditor from "../components/WaifuRelationshipEditor";
 
 function RouteWaifus() {
     const [data, setData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const { id } = useParams();
     const { canCreate } = useAuth();
+
+    const [isRelationshipEditOpen, setIsRelationshipEditOpen] = useState(false);
 
     useEffect(() => {
         if (!id) {
@@ -50,6 +54,21 @@ function RouteWaifus() {
 
     return (
         <>
+            {
+                canCreate() && (
+                    <>
+                        {/* contains edit modals for stuff like relationships */}
+                        <Modal
+                            open={isRelationshipEditOpen}
+                            onClose={() => setIsRelationshipEditOpen(false)}
+                        >
+                            <Paper sx={MODAL_STYLE}>
+                                <WaifuRelationshipEditor primaryCharacter={data} />
+                            </Paper>
+                        </Modal>
+                    </>
+                )
+            }
             <Box>
                 <Container maxWidth="lg">
                     <Box>
@@ -62,7 +81,7 @@ function RouteWaifus() {
                                         image={data.image_url || "https://placehold.co/400"}
                                         alt={data.name}
                                         //show top side of the image
-                                        sx={{ objectFit: 'cover', objectPosition: 'top', backgroundColor: '#f0f0f0'  }}
+                                        sx={{ objectFit: 'cover', objectPosition: 'top', backgroundColor: '#f0f0f0' }}
                                         style={{ width: '100%', height: 'auto', aspectRatio: '1 / 1.25' }}
                                     />
                                     <CardContent>
@@ -90,24 +109,47 @@ function RouteWaifus() {
                                         }
                                     </CardActions>
                                 </Card>
+                                <Paper sx={{ mt: 2, p: 2 }} elevation={2}>
+                                    <Typography variant="h6" component="div" gutterBottom>
+                                        Relationships
+                                        {
+                                            canCreate() && (
+                                                <IconButton size="small" color="primary" variant="outlined" sx={{ ml: 2 }} onClick={() => setIsRelationshipEditOpen(true)}>
+                                                    <AddIcon />
+                                                </IconButton>
+                                            )
+                                        }
+                                    </Typography>
+                                </Paper>
                             </Grid>
                             <Grid size={9}>
                                 <Grid container spacing={2} sx={{ width: '100%' }}>
-                                    <Grid item size={{ sx: 12, md: 4 }}>
-                                        {GetWaifuStat({ label: "Age", value: data.age ? <>
-                                            <Chip label={data.age} size="small" color="primary" variant="outlined" sx={{ mr: 1 }} />
-                                            {
-                                                data.age < 18 ? <Chip label="Minor" size="small" color="error" variant="outlined" sx={{ mr: 1 }} /> : ''
-                                            }
-                                            {getAgeRangeLabel(data.age)}
-                                        </> : '' })}
+                                    <Grid item size={{ sx: 12, md: 3 }}>
+                                        {GetWaifuStat({
+                                            label: "Age", value: data.age ? <>
+                                                <Chip label={data.age} size="small" color="primary" variant="outlined" sx={{ mr: 1 }} />
+                                                {
+                                                    data.age < 18 ? <Chip label="Minor" size="small" color="error" variant="outlined" sx={{ mr: 1 }} /> : ''
+                                                }
+                                                {getAgeRangeLabel(data.age)}
+                                            </> : ''
+                                        })}
                                     </Grid>
-                                    <Grid item size={{ sx: 12, md: 4 }}>
-                                        {GetWaifuStat({ label: "Birth Date", value: data.birth_date ? <>
-                                            {data.birth_date} ({getZodiacSign(data.birth_date)})
-                                        </> : '' })}
+                                    <Grid item size={{ sx: 12, md: 3 }}>
+                                        {GetWaifuStat({
+                                            label: "Gender", value: data.gender ? <>
+                                                {getGenderLabel(data.gender).symbol} {getGenderLabel(data.gender).label}
+                                            </> : ''
+                                        })}
                                     </Grid>
-                                    <Grid item size={{ sx: 12, md: 4 }}>
+                                    <Grid item size={{ sx: 12, md: 3 }}>
+                                        {GetWaifuStat({
+                                            label: "Birth Date", value: data.birth_date ? <>
+                                                {data.birth_date} ({getZodiacSign(data.birth_date)})
+                                            </> : ''
+                                        })}
+                                    </Grid>
+                                    <Grid item size={{ sx: 12, md: 3 }}>
                                         {GetWaifuStat({ label: "Birth Place", value: data.birth_place })}
                                     </Grid>
                                     <Grid item size={{ sx: 12, md: 3 }}>
@@ -117,18 +159,22 @@ function RouteWaifus() {
                                         {GetWaifuStat({ label: "Height", value: data.height ? `${data.height}cm` : '' })}
                                     </Grid>
                                     <Grid item size={{ sx: 12, md: 3 }}>
-                                        {GetWaifuStat({ label: "BMI", value: data.weight && data.height ? <>
-                                            {getBMI(data.height, data.weight).toFixed(2)} ({getBMICategory(getBMI(data.height, data.weight))})
-                                        </> : '' })}
+                                        {GetWaifuStat({
+                                            label: "BMI", value: data.weight && data.height ? <>
+                                                {getBMI(data.height, data.weight).toFixed(2)} ({getBMICategory(getBMI(data.height, data.weight))})
+                                            </> : ''
+                                        })}
                                     </Grid>
                                     <Grid item size={{ sx: 12, md: 3 }}>
                                         {GetWaifuStat({ label: "Blood Type", value: data.blood_type ? `${data.blood_type}` : '' })}
                                     </Grid>
                                     <Grid item size={{ sx: 12, md: 2 }}>
-                                        {GetWaifuStat({ label: "Cup Size", value: data.cup_size ? <>
-                                            <Chip label={getCupSizeLabel(data.cup_size)} size="small" color="primary" variant="outlined" sx={{ mr: 1 }} />
-                                            {data.bust ? getBreastBandSize(data.bust, data.cup_size) : ''}{data.cup_size}
-                                        </> : '' })}
+                                        {GetWaifuStat({
+                                            label: "Cup Size", value: data.cup_size ? <>
+                                                <Chip label={getCupSizeLabel(data.cup_size)} size="small" color="primary" variant="outlined" sx={{ mr: 1 }} />
+                                                {data.bust ? getBreastBandSize(data.bust, data.cup_size) : ''}{data.cup_size}
+                                            </> : ''
+                                        })}
                                     </Grid>
                                     <Grid item size={{ sx: 12, md: 2 }}>
                                         {GetWaifuStat({ label: "Bust", value: data.bust ? `${data.bust}cm` : '' })}
@@ -140,16 +186,19 @@ function RouteWaifus() {
                                         {GetWaifuStat({ label: "Hips", value: data.hip ? `${data.hip}cm` : '' })}
                                     </Grid>
                                     <Grid item size={{ sx: 12, md: 2 }}>
-                                        {GetWaifuStat({ label: "Body Type", value: data.height && data.weight && data.bust && data.waist && data.hip
-                                            ? getBodyType(data.height, data.weight, data.bust, data.waist, data.hip) : '' })}
+                                        {GetWaifuStat({
+                                            label: "Body Type", value: data.height && data.weight && data.bust && data.waist && data.hip
+                                                ? getBodyType(data.height, data.weight, data.bust, data.waist, data.hip) : ''
+                                        })}
                                     </Grid>
                                     <Grid item size={{ md: 12 }}>
                                         {GetWaifuStat({ label: "Description", value: data.description })}
                                     </Grid>
                                     <Grid item size={{ md: 12 }}>
-                                        {GetWaifuStat({ label: "Sources", value: data.sources ? data.sources.map((source, index) => (
-                                            <Chip key={index} label={source.name} size="small" color="primary" variant="outlined" sx={{ mr: 1 }} component={Link} to={`/sources/${source.id}`} />
-                                        )) : ''
+                                        {GetWaifuStat({
+                                            label: "Sources", value: data.sources ? data.sources.map((source, index) => (
+                                                <Chip key={index} label={source.name} size="small" color="primary" variant="outlined" sx={{ mr: 1 }} component={Link} to={`/sources/${source.id}`} />
+                                            )) : ''
                                         })}
                                     </Grid>
                                 </Grid>
@@ -167,12 +216,12 @@ function GetWaifuStat({ label, value }) {
         <>
             <Typography variant="body1" gutterBottom>{label}</Typography>
             {
-                value ? 
-                <Typography variant="body2" color="text.secondary">{value}</Typography>
-                : <Typography variant="body2" color="text.secondary" sx={{
-                    fontStyle: 'italic',
-                    color: 'gray',
-                }}>Not available</Typography>
+                value ?
+                    <Typography variant="body2" color="text.secondary">{value}</Typography>
+                    : <Typography variant="body2" color="text.secondary" sx={{
+                        fontStyle: 'italic',
+                        color: 'gray',
+                    }}>Not available</Typography>
             }
         </>
     );

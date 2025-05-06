@@ -139,3 +139,44 @@ export function getZodiacSign(birthDate) {
 
     return "Unknown Zodiac Sign";
 }
+
+export function getGenderLabel(gender) {
+    let label = 'Unknown';
+    let symbol = '❓';
+    switch (gender) {
+        case 'male':
+            label = 'Male';
+            symbol = '♂️';
+            break;
+        case 'female':
+            label = 'Female';
+            symbol = '♀️';
+            break;
+        case 'non-binary':
+            label = 'Non-binary';
+            symbol = '⚧️';
+            break;
+        case 'other':
+            label = 'Other';
+            symbol = '⚧️';
+            break;
+        default:
+            label = 'Unknown';
+            symbol = '❓';
+            break;
+    }
+
+    return {
+        label: label,
+        symbol: symbol,
+    }
+}
+
+export const MODAL_STYLE = {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    minWidth: 400,
+    padding: 4,
+};

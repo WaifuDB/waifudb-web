@@ -14,6 +14,7 @@ function RouteWaifuCreate() {
                 name: data.name,
                 jp_name: data.jp_name,
                 age: data.age,
+                gender: data.gender,
                 image_url: data.image_url,
                 birth_place: data.birthplace,
                 birth_date: data.birthdate,

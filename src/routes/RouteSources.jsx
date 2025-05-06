@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { getAPIUrl } from "../helpers/API";
 import { Box, Card, CardActionArea, CardContent, CardMedia, Grid, Stack, Typography } from "@mui/material";
+import { getGenderLabel } from "../helpers/Misc";
 
 function RouteSources() {
     const { id } = useParams();
@@ -136,7 +137,7 @@ function RouteSourcesObject() {
                                         />
                                         <CardContent>
                                             <Typography variant="body1" component="div" gutterBottom>
-                                                {character.name}
+                                                {getGenderLabel(character.gender).symbol} {character.name}
                                             </Typography>
                                         </CardContent>
                                     </CardActionArea>
