@@ -53,7 +53,7 @@ function RouteWaifuEdit() {
 
             ShowNotification("Character updated successfully", "success");
 
-            navigate(`/waifus/${dataResponse.id}`); // Redirect to the updated character page
+            navigate(`/characters/${dataResponse.id}`); // Redirect to the updated character page
         }catch(err){
             console.error(err);
             ShowNotification(err.message, "error");

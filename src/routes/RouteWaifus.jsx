@@ -83,7 +83,7 @@ function RouteWaifus() {
                                         </Button> */}
                                         {
                                             canCreate() && (
-                                                <Button size="small" fullWidth color="primary" component={Link} to={`/waifus/${data.id}/edit`} variant="outlined">
+                                                <Button size="small" fullWidth color="primary" component={Link} to={`/characters/${data.id}/edit`} variant="outlined">
                                                     Edit
                                                 </Button>
                                             )

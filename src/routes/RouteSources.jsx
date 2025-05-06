@@ -124,7 +124,7 @@ function RouteSourcesObject() {
                                 <Card elevation={2}>
                                     <CardActionArea
                                         component={Link}
-                                        to={`/waifus/${character.id}`}
+                                        to={`/characters/${character.id}`}
                                         style={{ textDecoration: 'none' }}
                                     >
                                         <CardMedia

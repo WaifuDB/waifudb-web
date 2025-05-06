@@ -34,8 +34,8 @@ function App() {
     { path: '/logout', element: <RouteLogout />, protected: false, },
     { path: '/create', element: <RouteWaifuCreate />, protected: true, creator_only: true, },
     { path: '/sources/:id?', element: <RouteSources />, protected: false, },
-    { path: '/waifus/:id', element: <RouteWaifus />, protected: false, },
-    { path: '/waifus/:id/edit', element: <RouteWaifuEdit />, protected: true, creator_only: true, },
+    { path: '/characters/:id', element: <RouteWaifus />, protected: false, },
+    { path: '/characters/:id/edit', element: <RouteWaifuEdit />, protected: true, creator_only: true, },
   ];
 
   const getRoute = (obj, is_child = false) => {
