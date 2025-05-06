@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { useAuth } from "../providers/AuthProvider";
 import HeaderAccountDropdown from "./HeaderAccountDropdown";
 import { useEffect, useState } from "react";
+import config from "../../config.json";
 
 function Header() {
     const [showMenu, setShowMenu] = useState(null);
@@ -24,7 +25,7 @@ function Header() {
                             mr: 2,
                             color: 'inherit',
                             textDecoration: 'none',
-                        }}>WaifuDB</Typography>
+                        }}>{config.WEBSITE_NAME}</Typography>
                         <Box sx={{ display: { xs: 'none', sm: 'none', md: 'none', lg: 'block', flexGrow: 1 } }}>
                             <Stack direction="row" spacing={2}>
                                 {
