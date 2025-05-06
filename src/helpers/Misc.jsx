@@ -180,3 +180,73 @@ export const MODAL_STYLE = {
     minWidth: 400,
     padding: 4,
 };
+
+export function sortRelationships(relationships) {
+    if(!Array.isArray(relationships) || relationships.length === 0) {
+        return relationships;
+    }
+    //A smart way to sort relationships (ie, Mother/Father go above Wife/Husband, Brother/Sister go under Wife/Husband)
+    
+    const relationshipOrder = {
+        1: ['mother', 'father', 'step-mother', 'step-father'],
+        2: ['uncle', 'aunt'],
+        3: ['brother', 'sister', 'step-brother', 'step-sister'],
+        4: ['husband', 'wife'],
+        5: ['boyfriend', 'girlfriend'],
+        6: ['{any}-cousin'],
+    };
+
+    const sortedRelationships = [];
+    const unsortedRelationships = [];
+
+    const relationshipKeys = Object.keys(relationshipOrder);
+    for (const relationship of relationships) {
+        let found = false;
+        for (const key of relationshipKeys) {
+            if (relationshipOrder[key].includes(relationship)) {
+                sortedRelationships.push({ relationship, order: key });
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            unsortedRelationships.push(relationship);
+        }
+    }
+
+    // Sort the sorted relationships by order and then by relationship name
+    sortedRelationships.sort((a, b) => {
+        if (a.order === b.order) {
+            return a.relationship.localeCompare(b.relationship);
+        }
+        return a.order - b.order;
+    });
+
+    // Combine the sorted and unsorted relationships
+    return [...sortedRelationships.map(item => item.relationship), ...unsortedRelationships];
+}
+
+export function getRelationshipColor(relationshipLabel){
+    // Love-related become pink, family-related become blue, and the rest are grey
+    const loveRelated = ['boyfriend', 'girlfriend', 'husband', 'wife', 'fiance', 'fiancee', 'lover', 'partner', 'spouse', 'significant other', 'love interest', 'loveinterest', 'crush', 'sweetheart', 'darling', 'beloved', 'soulmate'];
+    const familyRelated = ['mother', 'father', 'brother', 'sister', 'uncle', 'aunt', 'grandmother', 'grandfather'];
+    const other = ['friend', 'enemy', 'rival', 'acquaintance', 'colleague', 'classmate', 'partner'];
+
+    //consider stuff like step- or step, and special characters like in fiancee (é)
+    let _relationshipLabel = relationshipLabel.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
+
+    const loveRegex = new RegExp(loveRelated.join('|'), 'i');
+    const familyRegex = new RegExp(familyRelated.join('|'), 'i');
+    const otherRegex = new RegExp(other.join('|'), 'i');
+
+    const relationship = _relationshipLabel.toLowerCase().trim();
+    if (loveRegex.test(relationship)) {
+        return '#FF69B4'; // Pink
+    } else if (familyRegex.test(relationship)) {
+        return '#ADD8E6'; // Light Blue
+    } else if (otherRegex.test(relationship)) {
+        return '#D3D3D3'; // Light Grey
+    } else {
+        return '#FFFFFF'; // Default to white for unknown relationships
+    }
+}
