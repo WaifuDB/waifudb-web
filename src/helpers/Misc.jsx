@@ -229,7 +229,8 @@ export function sortRelationships(relationships) {
 export function getRelationshipColor(relationshipLabel){
     // Love-related become pink, family-related become blue, and the rest are grey
     const loveRelated = ['boyfriend', 'girlfriend', 'husband', 'wife', 'fiance', 'fiancee', 'lover', 'partner', 'spouse', 'significant other', 'love interest', 'loveinterest', 'crush', 'sweetheart', 'darling', 'beloved', 'soulmate'];
-    const familyRelated = ['mother', 'father', 'brother', 'sister', 'uncle', 'aunt', 'grandmother', 'grandfather'];
+    const familyRelated = ['mother', 'father', 'brother', 'sister', 'uncle', 'aunt', 'grandmother', 'grandfather', 'cousin'];
+    const propertyRelated = ['master', 'slave', 'owner', 'pet'];
     const other = ['friend', 'enemy', 'rival', 'acquaintance', 'colleague', 'classmate', 'partner'];
 
     //consider stuff like step- or step, and special characters like in fiancee (é)
@@ -237,6 +238,7 @@ export function getRelationshipColor(relationshipLabel){
 
     const loveRegex = new RegExp(loveRelated.join('|'), 'i');
     const familyRegex = new RegExp(familyRelated.join('|'), 'i');
+    const propertyRegex = new RegExp(propertyRelated.join('|'), 'i');
     const otherRegex = new RegExp(other.join('|'), 'i');
 
     const relationship = _relationshipLabel.toLowerCase().trim();
@@ -246,6 +248,8 @@ export function getRelationshipColor(relationshipLabel){
         return '#ADD8E6'; // Light Blue
     } else if (otherRegex.test(relationship)) {
         return '#D3D3D3'; // Light Grey
+    } else if (propertyRegex.test(relationship)) {
+        return '#8B0000'; // Dark Red
     } else {
         return '#FFFFFF'; // Default to white for unknown relationships
     }
