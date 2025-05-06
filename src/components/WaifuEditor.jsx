@@ -125,10 +125,21 @@ function WaifuEditor(props) {
     const onPasteThreeSizes = (e) => {
         const pastedData = e.clipboardData.getData('text');
         //can expect the following format: Bxx-Wxx-Hxx (xx are numbers, can be any length)
-        const regex = /B(\d+)-W(\d+)-H(\d+)/;
-        const match = pastedData.match(regex);
+        let match = pastedData.match(/B(\d+)-W(\d+)-H(\d+)/);
+
+        if(!match){
+            //try xx-xx-xx (xx are numbers, can be any length)
+            match = pastedData.match(/(\d+)-(\d+)-(\d+)/);
+        }
+
+        let [bust, waist, hips] = [];
         if (match) {
-            const [_, bust, waist, hips] = match;
+            bust = match[1];
+            waist = match[2];
+            hips = match[3];
+        }
+
+        if(bust && waist && hips){
             setInputBust(bust);
             setInputWaist(waist);
             setInputHips(hips);
