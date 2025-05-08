@@ -182,11 +182,11 @@ export const MODAL_STYLE = {
 };
 
 export function sortRelationships(relationships) {
-    if(!Array.isArray(relationships) || relationships.length === 0) {
+    if (!Array.isArray(relationships) || relationships.length === 0) {
         return relationships;
     }
     //A smart way to sort relationships (ie, Mother/Father go above Wife/Husband, Brother/Sister go under Wife/Husband)
-    
+
     const relationshipOrder = {
         1: ['mother', 'father', 'step-mother', 'step-father'],
         2: ['uncle', 'aunt'],
@@ -226,31 +226,260 @@ export function sortRelationships(relationships) {
     return [...sortedRelationships.map(item => item.relationship), ...unsortedRelationships];
 }
 
-export function getRelationshipColor(relationshipLabel){
+const loveRelated = ['boyfriend', 'girlfriend', 'husband', 'wife', 'fiance', 'fiancee', 'fiancée', 'lover', 'partner', 'spouse', 'significant other', 'sweetheart', 'darling', 'beloved', 'soulmate'];
+const potentialLoveRelated = ['harem candidate', 'haremcandidate', 'love interest', 'loveinterest', 'crush'];
+const familyRelated = ['relative', 'mother', 'father', 'brother', 'sister', 'uncle', 'aunt', 'grandmother', 'grandfather', 'cousin', 'daughter', 'son', 'creator', 'creation', 'ward', 'guardian'];
+const propertyRelated = ['rapist', 'victim', 'master', 'slave', 'owner', 'pet', 'maid', 'servant', 'mistress', 'butler'];
+const other = ['friend', 'enemy', 'rival', 'acquaintance', 'colleague', 'classmate', 'partner'];
+
+export function getRelationshipColor(relationshipLabel) {
+    if (!relationshipLabel) return '#FFFFFF'; // Default to white for unknown relationships
     // Love-related become pink, family-related become blue, and the rest are grey
-    const loveRelated = ['boyfriend', 'girlfriend', 'husband', 'wife', 'fiance', 'fiancee', 'lover', 'partner', 'spouse', 'significant other', 'love interest', 'loveinterest', 'crush', 'sweetheart', 'darling', 'beloved', 'soulmate'];
-    const familyRelated = ['mother', 'father', 'brother', 'sister', 'uncle', 'aunt', 'grandmother', 'grandfather', 'cousin'];
-    const propertyRelated = ['master', 'slave', 'owner', 'pet'];
-    const other = ['friend', 'enemy', 'rival', 'acquaintance', 'colleague', 'classmate', 'partner'];
 
-    //consider stuff like step- or step, and special characters like in fiancee (é)
-    let _relationshipLabel = relationshipLabel.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
+    //love: #FF69B4 (pink)
+    //potential love: #FFB6C1 (light pink)
+    //family: #ADD8E6 (light blue)
+    //property: #8B0000 (dark red)
+    //other: #D3D3D3 (light grey)
+    //unknown: #FFFFFF (white)
+    //ex-relationships: #A9A9A9 (dark grey)
 
-    const loveRegex = new RegExp(loveRelated.join('|'), 'i');
-    const familyRegex = new RegExp(familyRelated.join('|'), 'i');
-    const propertyRegex = new RegExp(propertyRelated.join('|'), 'i');
-    const otherRegex = new RegExp(other.join('|'), 'i');
+    let color = '#FFFFFF'; // Default to white for unknown relationships
 
-    const relationship = _relationshipLabel.toLowerCase().trim();
-    if (loveRegex.test(relationship)) {
-        return '#FF69B4'; // Pink
-    } else if (familyRegex.test(relationship)) {
-        return '#ADD8E6'; // Light Blue
-    } else if (otherRegex.test(relationship)) {
-        return '#D3D3D3'; // Light Grey
-    } else if (propertyRegex.test(relationship)) {
-        return '#8B0000'; // Dark Red
-    } else {
-        return '#FFFFFF'; // Default to white for unknown relationships
+    let relationship = relationshipLabel.toLowerCase().trim();
+    //remove prefixes like 'step-', 'step ', 'foster-', 'foster ' (not similar to 'ex-')
+    // relationship = relationship.replace(/^(step|foster|step |foster )/i, '');
+    let is_step = false;
+    const prefixes = ['step', 'foster', 'half', 'adoptive', 'in-law', 'in law'];
+    // const suffixes = ['in-law', 'in law'];
+    for (const prefix of prefixes) {
+        if (relationship.startsWith(prefix + '-') || relationship.startsWith(prefix + ' ') || relationship.startsWith(prefix + '') ||
+            relationship.endsWith('-' + prefix) || relationship.endsWith(' ' + prefix) || relationship.endsWith(prefix)) {
+            relationship = relationship.replace(new RegExp(`^(${prefix}-|${prefix} )`, 'i'), '');
+            is_step = true;
+        }
     }
+
+    if (loveRelated.includes(relationship)) {
+        color = '#FF69B4'; // Pink
+    } else if (potentialLoveRelated.includes(relationship)) {
+        color = '#FFB6C1'; // Light Pink
+    } else if (familyRelated.includes(relationship)) {
+        color = '#ADD8E6'; // Light Blue
+    } else if (propertyRelated.includes(relationship)) {
+        color = '#8B0000'; // Dark Red
+    } else if (other.includes(relationship)) {
+        color = '#D3D3D3'; // Light Grey
+    }
+
+    if (relationship.startsWith('ex-') || relationship.startsWith('ex ') || relationship.startsWith('former ') || relationship === 'divored') {
+        color = '#A9A9A9'; // Overrides all
+    }
+
+    // If it's a step relationship, append opacity 'aa'
+    if (is_step) {
+        color = color + 'aa'; // Add opacity to the color
+    }
+
+    return color;
+}
+
+export function getQuadraticXY(t, sx, sy, cp1x, cp1y, ex, ey) {
+    return {
+        x: (1 - t) * (1 - t) * sx + 2 * (1 - t) * t * cp1x + t * t * ex,
+        y: (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * cp1y + t * t * ey,
+    };
+}
+
+export function getQuadraticXYFourWays(
+    t,
+    sx,
+    sy,
+    cp1x,
+    cp1y,
+    cp2x,
+    cp2y,
+    ex,
+    ey,
+) {
+    return {
+        x:
+            (1 - t) * (1 - t) * (1 - t) * sx +
+            3 * (1 - t) * (1 - t) * t * cp1x +
+            3 * (1 - t) * t * t * cp2x +
+            t * t * t * ex,
+        y:
+            (1 - t) * (1 - t) * (1 - t) * sy +
+            3 * (1 - t) * (1 - t) * t * cp1y +
+            3 * (1 - t) * t * t * cp2y +
+            t * t * t * ey,
+    };
+};
+
+export function createTopAlignedSquareImage(sourceImage) {
+    // Determine square size (smallest dimension)
+    const size = Math.min(sourceImage.width, sourceImage.height);
+
+    // Create canvas for cropping
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+
+    // Calculate source coordinates (top-aligned, centered horizontally)
+    const sx = (sourceImage.width - size) / 2;
+    const sy = 0; // Top alignment
+
+    // Perform the crop
+    ctx.drawImage(
+        sourceImage,
+        sx, sy, size, size, // Source rectangle
+        0, 0, size, size    // Destination rectangle
+    );
+
+    // Create and return new Image object
+    const croppedImage = new Image();
+    //cors
+    croppedImage.crossOrigin = 'anonymous';
+    croppedImage.src = canvas.toDataURL('image/png');
+    return croppedImage;
+}
+
+const remappableRelationships = [
+    { a: "brother", b: "sister", label: "sibling" },
+    { a: "brother-in-law", b: "sister-in-law", label: "sibling-in-law" },
+    { a: "half-brother", b: "half-sister", label: "half-sibling" },
+    { a: "step-brother", b: "step-sister", label: "step-sibling" },
+    { a: "husband", b: "wife", label: "married" },
+    { a: "boyfriend", b: "girlfriend", label: "partner" },
+    { a: "ex-boyfriend", b: "ex-girlfriend", label: "ex-partner" },
+    { a: "ex-husband", b: "ex-wife", label: "divorced" },
+]
+
+//these indicate no real ties other than emotional ones or connections with unknown ties in between (distance relatives for example)
+const dashableRelationships = [
+    'step-{relationship}',
+    'step {relationship}',
+    'foster-{relationship}',
+    'foster {relationship}',
+    'half-{relationship}',
+    'half {relationship}',
+    'adoptive-{relationship}',
+    'adoptive {relationship}',
+    'ex-{relationship}',
+    'ex {relationship}',
+    'former-{relationship}',
+    'former {relationship}',
+    'crush',
+    'relative'
+]
+
+const removableOpposites = [
+    //for example; if maid, remove the opposite 'master' label
+    'maid', 'servant', 'slave', 'pet', 'butler', 
+    '{any}father', '{any}mother',
+]
+
+export function reprocessRelationshipsForChart(relationships) {
+    //this builds a new array for extra data (or remove data)
+    //like siblings with shared parents, dont draw the sibling line
+
+    let _relationships = [...relationships];
+
+    remappableRelationships.forEach((relationship) => {
+        _relationships.forEach((rel) => {
+            if ((rel.labels.forward === relationship.a && rel.labels.reverse === relationship.b) || (rel.labels.forward === relationship.b && rel.labels.reverse === relationship.a)) {
+                rel.labels.forward = relationship.label;
+                rel.labels.reverse = relationship.label;
+                rel.same_labels = true;
+            }
+        });
+    });
+
+    _relationships = _relationships.filter((relationship, index, self) =>
+        index === self.findIndex((r) => {
+            return (r.from === relationship.from && r.to === relationship.to && r.labels.forward === relationship.labels.forward && r.labels.reverse === relationship.labels.reverse) ||
+                (r.from === relationship.to && r.to === relationship.from && r.labels.forward === relationship.labels.reverse && r.labels.reverse === relationship.labels.forward);
+        })
+    );
+
+    //set opposite relationships to empty string if needed (like master/slave, maid/owner, etc)
+    //just set the label to empty string
+    _relationships = _relationships.map((relationship) => {
+        removableOpposites.forEach((removable) => {
+            // if (relationship.labels.forward === removable) {
+            //     relationship.labels.reverse = '';
+            // }
+            // if (relationship.labels.reverse === removable) {
+            //     relationship.labels.forward = '';
+            // }
+            if (relationship.labels.forward?.toLowerCase().includes(removable.replace('{any}', '').toLowerCase())) {
+                relationship.labels.reverse = '';
+            }
+            if (relationship.labels.reverse?.toLowerCase().includes(removable.replace('{any}', '').toLowerCase())) {
+                relationship.labels.forward = '';
+            }
+        });
+        return relationship;
+    })
+
+    _relationships = _relationships.flatMap(rel => [
+        //if the relationship is the same in both directions, only add one of them
+        { source: rel.from, target: rel.to, label: rel.labels.forward, color: rel.color, curvature: rel.curvature, same_labels: rel.same_labels, distance: rel.distance },
+        ...(rel.same_labels ? [] : [{ source: rel.to, target: rel.from, label: rel.labels.reverse, color: rel.color, curvature: rel.curvature, same_labels: rel.same_labels, distance: rel.distance }]),
+    ]);
+
+    _relationships = _relationships.filter((relationship) => {
+        return relationship.label && relationship.label.trim() !== "";
+    });
+
+    // if ex-, step-, foster- or half- is in the relationship, add property 'dashed' to the relationship
+    _relationships = _relationships.map((relationship) => {
+        let isDashed = false;
+        dashableRelationships.forEach((dashable) => {
+            if (relationship.label.toLowerCase().includes(dashable.replace('{relationship}', '').toLowerCase())) {
+                isDashed = true;
+            }
+        });
+        return { ...relationship, dashed: isDashed };
+    });
+
+    //hide unnecessary relationships visually
+    //example:
+    // a: sister1
+    // b: sister2
+    // c: mother
+    // d: father
+    // if sister1 and sister2 have the same parents, add an extra property to their relationship ('visualize: false')
+    // _relationships = _relationships.map((relationship) => {
+    //     // Check if the relationship is a sibling relationship
+    //     if(relationship.label === 'sibling' || relationship.label === 'sister' || relationship.label === 'brother') {
+    //         let parent_ids = [];
+
+    //         _relationships.forEach((rel) => {
+    //             if (rel.label === 'mother' || rel.label === 'father' || rel.label === 'parent') {
+    //                 if (rel.source === relationship.source || rel.target === relationship.source) {
+    //                     parent_ids.push(rel.target);
+    //                 } else if (rel.source === relationship.target || rel.target === relationship.target) {
+    //                     parent_ids.push(rel.source);
+    //                 }
+    //             }
+    //         });
+
+    //         // Remove own ids from parent_ids
+    //         parent_ids = parent_ids.filter(id => id !== relationship.source && id !== relationship.target);
+
+    //         if(parent_ids.length === 2){
+    //             relationship.visualize = false; // Hide the relationship visually
+    //         }else{
+    //             relationship.visualize = true; // Show the relationship visually
+    //         }
+    //     }
+
+    //     return relationship;
+    // });
+
+    // console.log(_relationships);
+
+    return _relationships;
 }

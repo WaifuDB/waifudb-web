@@ -8,7 +8,6 @@ import { useAuth } from "../providers/AuthProvider";
 
 function WaifuRelationshipEditor({ onReload, primaryCharacter }) {
     const [id, setId] = useState(null); // If ID is set, we are editing an existing relationship
-    const [character1, setCharacter1] = useState(null); // Character ID 1
     const [relationships, setRelationships] = useState([]);
     const { user, token } = useAuth(); // Get user_id and token from the primary character
 
@@ -16,7 +15,6 @@ function WaifuRelationshipEditor({ onReload, primaryCharacter }) {
 
     useEffect(() => {
         if (primaryCharacter) {
-            setCharacter1(primaryCharacter); // Set character ID 1 to the primary character's ID
             let _relationships = primaryCharacter.relationships || []; // Get the relationships from the primary character
             //add a fake ID to the relationships array, used for indexing
             _relationships = _relationships.map((item, index) => {
@@ -25,6 +23,7 @@ function WaifuRelationshipEditor({ onReload, primaryCharacter }) {
                     tempId: index,
                 }
             });
+            console.log(_relationships);
             setRelationships(_relationships); // Set the relationships to the primary character's relationships
         }
 
@@ -71,8 +70,9 @@ function WaifuRelationshipEditor({ onReload, primaryCharacter }) {
                 if (item.tempId === tempId) {
                     return {
                         ...item,
-                        relationship_type: relA,
-                        reciprocal_relationship_type: relB,
+                        // relationship_type: relA,
+                        relationship_type: item.from_id === primaryCharacter.id ? relA?.label : relB?.label,
+                        reciprocal_relationship_type: item.from_id === primaryCharacter.id ? relB?.label : relA?.label,
                     }
                 }
                 return item;
@@ -87,6 +87,7 @@ function WaifuRelationshipEditor({ onReload, primaryCharacter }) {
             const body = {
                 //send without character and tempId
                 relationships: relationships,
+                target_id: primaryCharacter.id,
                 user_id: user.id,
                 token: token,
             }
@@ -144,8 +145,8 @@ function WaifuRelationshipEditor({ onReload, primaryCharacter }) {
                                                     //add empty relationship to the relationships array
                                                     let _rel = {
                                                         id: null,
-                                                        character_id1: primaryCharacterId,
-                                                        character_id2: secondaryCharacterId,
+                                                        from_id: primaryCharacterId,
+                                                        to_id: secondaryCharacterId,
                                                         relationship_type: null,
                                                         reciprocal_relationship_type: null,
                                                         tempId: relationships.length,
@@ -161,14 +162,13 @@ function WaifuRelationshipEditor({ onReload, primaryCharacter }) {
                                                 {/* list character relationships here, for now just a mockup we can reuse later */}
 
                                                 {/* prim character is {input} of sec character */}
-                                                {/* <WaifuRelationshipEditorFields character1={primaryCharacter} character2={character} /> */}
                                                 {
                                                     relationships.map((relationship) => {
                                                         //if any of the ids match character.id
-                                                        if (relationship.character_id1 === character.id || relationship.character_id2 === character.id) {
+                                                        if (relationship.from_id === character.id || relationship.to_id === character.id) {
                                                             return (
                                                                 <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', mt: 2 }} key={relationship.tempId}>
-                                                                    <WaifuRelationshipEditorFields key={relationship.id} character1={character} character2={primaryCharacter} relationship={relationship.relationship_type} reciprocal_relationship={relationship.reciprocal_relationship_type} onUpdateValues={onUpdateRelationship} tempId={relationship.tempId} />
+                                                                    <WaifuRelationshipEditorFields key={relationship.id} from_character={character} to_character={primaryCharacter} relationship={relationship.relationship_type} reciprocal_relationship={relationship.reciprocal_relationship_type} onUpdateValues={onUpdateRelationship} tempId={relationship.tempId} />
                                                                     <Button variant="outlined" color="error" size="small" sx={{ ml: 1 }} onClick={() => {
                                                                         //remove relationship from the relationships array
                                                                         setRelationships((prev) => {
@@ -201,19 +201,19 @@ function WaifuRelationshipEditor({ onReload, primaryCharacter }) {
     );
 }
 
-function WaifuRelationshipEditorFields({ tempId, character1, character2, relationship, reciprocal_relationship, onUpdateValues }) {
-    const [relA, setRelA] = useState(relationship || null); // Relationship A
-    const [relB, setRelB] = useState(reciprocal_relationship || null); // Relationship B
+function WaifuRelationshipEditorFields({ tempId, from_character, to_character, relationship, reciprocal_relationship, onUpdateValues }) {
+    const [relA, setRelA] = useState({id: to_character.id, label: relationship || null}); // Relationship A
+    const [relB, setRelB] = useState({id: from_character.id, label: reciprocal_relationship || null}); // Relationship B
 
     const internalOnUpdateValues = () => {
         //update the values in the parent component
-        if (onUpdateValues && relA && relB) {
+        if (onUpdateValues && (relA || relB)) {
             onUpdateValues(tempId, relA, relB);
         }
     }
 
     useEffect(() => {
-        if ((tempId || tempId === 0) && relA && relB) {
+        if ((tempId || tempId === 0) && (relA || relB)) {
             internalOnUpdateValues(tempId, relA, relB);
         }
     }, [relA, relB]);
@@ -227,32 +227,38 @@ function WaifuRelationshipEditorFields({ tempId, character1, character2, relatio
             {/* center vertically */}
             <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
                 <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-                    <Typography variant="body1" component="p" sx={{ ml: 2 }}><b>{character1.name}</b></Typography>
+                    <Typography variant="body1" component="p" sx={{ ml: 2 }}><b>{to_character.name}</b></Typography>
                     <Typography variant="body1" component="p" sx={{ ml: 2 }}>→</Typography>
-                    <Typography variant="body1" component="p" sx={{ ml: 2 }}>{character2.name}</Typography>
+                    <Typography variant="body1" component="p" sx={{ ml: 2 }}>{from_character.name}</Typography>
                 </Box>
                 <TextField
                     size="small"
                     variant="outlined"
                     placeholder="Relationship"
                     sx={{ width: 'auto' }}
-                    value={relA}
-                    onChange={(e) => setRelA(e.target.value)}
+                    value={relA?.label}
+                    onChange={(e) => setRelA({
+                        id: to_character.id,
+                        label: e.target.value,
+                    })}
                 />
             </Box>
             <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
                 <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-                    <Typography variant="body1" component="p" sx={{ ml: 2 }}>{character2.name}</Typography>
+                    <Typography variant="body1" component="p" sx={{ ml: 2 }}>{from_character.name}</Typography>
                     <Typography variant="body1" component="p" sx={{ ml: 2 }}>→</Typography>
-                    <Typography variant="body1" component="p" sx={{ ml: 2 }}><b>{character1.name}</b></Typography>
+                    <Typography variant="body1" component="p" sx={{ ml: 2 }}><b>{to_character.name}</b></Typography>
                 </Box>
                 <TextField
                     size="small"
                     variant="outlined"
                     placeholder="Relationship"
                     sx={{ width: 'auto' }}
-                    value={relB}
-                    onChange={(e) => setRelB(e.target.value)}
+                    value={relB?.label}
+                    onChange={(e) => setRelB({
+                        id: from_character.id,
+                        label: e.target.value,
+                    })}
                 />
             </Box>
         </Box>

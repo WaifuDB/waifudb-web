@@ -26,7 +26,7 @@ function WaifuEditor(props) {
 
     const [isLoading, setIsLoading] = useState(true);
 
-    const onPrefill = (data) => {
+    const onPrefill = (data, skip_source = false) => {
         setInputName(data.name || '');
         setInputJpName(data.jp_name || '');
         setInputAge(data.age || '');
@@ -42,7 +42,9 @@ function WaifuEditor(props) {
         setInputWaist(data.waist || '');
         setInputHips(data.hip || '');
         setInputDescription(data.description || '');
-        setInputSource(data.sources?.[0]?.name || '');
+        if(!skip_source) {
+            setInputSource(data.sources?.[0]?.name || '');
+        }
     }
 
     const reloadSources = async () => {
@@ -158,6 +160,21 @@ function WaifuEditor(props) {
             setInputHips(hips);
             e.preventDefault(); // Prevent the default paste action
         }
+    }
+
+    const onPasteImageUrl = (e) => {
+        const pastedData = e.clipboardData.getData('text');
+
+        let url = pastedData;
+
+        //if static.wikia.nocookie.net
+        if (pastedData.includes("static.wikia.nocookie.net")) {
+            //remove /revision/ and everything after it
+            url = pastedData.split("/revision/")[0];
+        }
+
+        setInputImageUrl(url);
+        e.preventDefault(); // Prevent the default paste action
     }
 
     if (isLoading) {
@@ -350,14 +367,14 @@ function WaifuEditor(props) {
                             margin="normal"
                             value={inputImageUrl}
                             onChange={(e) => setInputImageUrl(e.target.value)}
+                            onPaste={onPasteImageUrl}
                         />
                     </Box>
 
                     <Button variant="contained" color="primary" fullWidth sx={{ mt: 2 }} onClick={onSubmit}>Submit</Button>
                     {/* empty all fields */}
-                    <Button variant="outlined" color="secondary" fullWidth sx={{ mt: 2 }} onClick={() => {
-                        onPrefill({});
-                    }}>Clear</Button>
+                    <Button variant="outlined" color="secondary" fullWidth sx={{ mt: 2 }} onClick={() => { onPrefill({}); }}>Clear</Button>
+                    <Button variant="outlined" color="secondary" size='small' fullWidth sx={{ mt: 2 }} onClick={() => { onPrefill({}, true); }}>Clear (keep source)</Button>
                 </Container>
             </Box>
         </>

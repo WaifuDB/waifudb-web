@@ -36,14 +36,14 @@ function RouteWaifus() {
             //group relationships by target character id
             const relationships = {};
             waifuData.relationships.forEach((relationship) => {
-                let targetId = relationship.character_id1 == waifuData.id ? relationship.character_id2 : relationship.character_id1;
+                let targetId = relationship.to_id == waifuData.id ? relationship.from_id : relationship.to_id;
                 if (!relationships[targetId]) {
                     relationships[targetId] = {
                         character: relationship.character,
                         types: []
                     };
                 }
-                const _type = relationship.character_id2 == waifuData.id ? relationship.relationship_type : relationship.reciprocal_relationship_type;
+                const _type = relationship.to_id == waifuData.id ? relationship.relationship_type : relationship.reciprocal_relationship_type;
                 relationships[targetId].types.push({
                     type: _type,
                     color: getRelationshipColor(_type)
@@ -147,6 +147,17 @@ function RouteWaifus() {
                                             {
                                                 displayableRelationships && Object.keys(displayableRelationships).length > 0 ? Object.keys(displayableRelationships).map((key) => {
                                                     let targetCharacter = displayableRelationships[key].character;
+                                                    //count excluding .type equal to null
+                                                    let countRelationships = 0;
+                                                    displayableRelationships[key].types.forEach((relationship) => {
+                                                        if (relationship.type != null) {
+                                                            countRelationships++;
+                                                        }
+                                                    });
+
+                                                    if(countRelationships == 0) {
+                                                        return null;
+                                                    }
 
                                                     return (
                                                         <>
@@ -159,6 +170,9 @@ function RouteWaifus() {
                                                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                                                                 {
                                                                     displayableRelationships[key].types.map((relationship, index) => {
+                                                                        if(relationship.type == null) {
+                                                                            return null;
+                                                                        }
                                                                         let relationshipLabel = relationship.type;
                                                                         //uppercase the first letter of the relationship label
                                                                         relationshipLabel = relationshipLabel?.charAt(0).toUpperCase() + relationshipLabel?.slice(1);
@@ -180,20 +194,6 @@ function RouteWaifus() {
                                                     fontStyle: 'italic',
                                                     color: 'gray',
                                                 }}>No relationships found</Typography>
-                                                // data.relationships.map((relationship) => {
-                                                //     let relationshipLabel = data.id == relationship.character_id1 ? relationship.reciprocal_relationship_type : relationship.relationship_type;
-                                                //     //uppercase the first letter of the relationship label
-                                                //     relationshipLabel = relationshipLabel?.charAt(0).toUpperCase() + relationshipLabel?.slice(1);
-                                                //     relationshipLabel = relationshipLabel ?? 'Unknown';
-                                                //     return (
-                                                //         <>
-                                                //             <Typography variant="body1" component="div" gutterBottom key={relationship.id}>
-                                                //                 {getGenderLabel(relationship.character.gender).symbol}
-                                                //                 <Chip label={relationshipLabel} size="small" color="primary" variant="outlined" sx={{ ml: 1 }} />
-                                                //             </Typography>
-                                                //         </>
-                                                //     )
-                                                // })
                                             }
                                         </Stack>
                                     </> : <Typography variant="body2" color="text.secondary" sx={{
