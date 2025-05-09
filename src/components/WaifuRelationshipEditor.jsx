@@ -1,4 +1,4 @@
-import { Avatar, Box, Button, Divider, FormControl, IconButton, InputLabel, MenuItem, Select, Stack, TextField, Typography } from "@mui/material";
+import { Avatar, Box, Button, Checkbox, Divider, FormControl, FormControlLabel, IconButton, InputLabel, MenuItem, Select, Stack, TextField, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import { getGenderLabel, ShowNotification } from "../helpers/Misc";
 import { getAPIUrl } from "../helpers/API";
@@ -63,7 +63,7 @@ function WaifuRelationshipEditor({ onReload, primaryCharacter }) {
         );
     }
 
-    const onUpdateRelationship = (tempId, relA, relB) => {
+    const onUpdateRelationship = (tempId, relA, relB, isVisualize) => {
         //update the relationship in the relationships array
         setRelationships((prev) => {
             return prev.map((item) => {
@@ -73,6 +73,7 @@ function WaifuRelationshipEditor({ onReload, primaryCharacter }) {
                         // relationship_type: relA,
                         relationship_type: item.from_id === primaryCharacter.id ? relA?.label : relB?.label,
                         reciprocal_relationship_type: item.from_id === primaryCharacter.id ? relB?.label : relA?.label,
+                        visualize: isVisualize,
                     }
                 }
                 return item;
@@ -150,6 +151,7 @@ function WaifuRelationshipEditor({ onReload, primaryCharacter }) {
                                                         relationship_type: null,
                                                         reciprocal_relationship_type: null,
                                                         tempId: relationships.length,
+                                                        visualize: true,
                                                     }
 
                                                     //just add it to the array, no need to check for duplicates (since values are null)
@@ -168,7 +170,7 @@ function WaifuRelationshipEditor({ onReload, primaryCharacter }) {
                                                         if (relationship.from_id === character.id || relationship.to_id === character.id) {
                                                             return (
                                                                 <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', mt: 2 }} key={relationship.tempId}>
-                                                                    <WaifuRelationshipEditorFields key={relationship.id} from_character={character} to_character={primaryCharacter} relationship={relationship.relationship_type} reciprocal_relationship={relationship.reciprocal_relationship_type} onUpdateValues={onUpdateRelationship} tempId={relationship.tempId} />
+                                                                    <WaifuRelationshipEditorFields key={relationship.id} from_character={character} to_character={primaryCharacter} relationship={relationship.relationship_type} reciprocal_relationship={relationship.reciprocal_relationship_type} onUpdateValues={onUpdateRelationship} tempId={relationship.tempId} visualize={relationship.visualize} />
                                                                     <Button variant="outlined" color="error" size="small" sx={{ ml: 1 }} onClick={() => {
                                                                         //remove relationship from the relationships array
                                                                         setRelationships((prev) => {
@@ -201,22 +203,23 @@ function WaifuRelationshipEditor({ onReload, primaryCharacter }) {
     );
 }
 
-function WaifuRelationshipEditorFields({ tempId, from_character, to_character, relationship, reciprocal_relationship, onUpdateValues }) {
+function WaifuRelationshipEditorFields({ tempId, visualize, from_character, to_character, relationship, reciprocal_relationship, onUpdateValues }) {
     const [relA, setRelA] = useState({id: to_character.id, label: relationship || null}); // Relationship A
     const [relB, setRelB] = useState({id: from_character.id, label: reciprocal_relationship || null}); // Relationship B
+    const [isVisualize, setIsVisualize] = useState(visualize); // Visualize relationship
 
     const internalOnUpdateValues = () => {
         //update the values in the parent component
         if (onUpdateValues && (relA || relB)) {
-            onUpdateValues(tempId, relA, relB);
+            onUpdateValues(tempId, relA, relB, isVisualize);
         }
     }
 
     useEffect(() => {
         if ((tempId || tempId === 0) && (relA || relB)) {
-            internalOnUpdateValues(tempId, relA, relB);
+            internalOnUpdateValues();
         }
-    }, [relA, relB]);
+    }, [relA, relB, isVisualize]); // Update when relA, relB or isVisualize changes
 
     return (
         <Box sx={{
@@ -260,6 +263,10 @@ function WaifuRelationshipEditorFields({ tempId, from_character, to_character, r
                         label: e.target.value,
                     })}
                 />
+            </Box>
+            <Box>
+                {/* checkbox to toggle visualize on or off */}
+                <FormControlLabel control={<Checkbox checked={isVisualize} onChange={(e) => setIsVisualize(e.target.checked)} />} label="Visualize" />
             </Box>
         </Box>
     )

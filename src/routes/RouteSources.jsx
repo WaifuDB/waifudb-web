@@ -82,6 +82,8 @@ function RouteSourcesList() {
     </>
 }
 
+const MIN_NODE_SIZE = 16;
+const MAX_NODE_SIZE = 32;
 function RouteSourcesObject() {
     const { id } = useParams();
     const fgRef = useRef();
@@ -94,9 +96,8 @@ function RouteSourcesObject() {
     useEffect(() => {
         //increase distance between connected nodes
         if (fgRef.current) {
-            console.log("ForceGraph2D ref", fgRef.current);
             fgRef.current.d3Force('charge')
-                .strength(-500)
+                .strength(-600)
                 .distanceMax(300)
                 .distanceMin(50);
         }
@@ -133,12 +134,15 @@ function RouteSourcesObject() {
                         image.src = character.image_url || "https://placehold.co/400";
                         image.crossOrigin = "anonymous"; // to avoid CORS issues
 
+                        // maxRelationshipCount = Math.max(maxRelationshipCount, character.relationships.length || 0);
                         _relData.characters.push({
                             id: character.id,
+                            gender: character.gender,
                             name: character.name,
                             image_url: character.image_url,
-                            size: character.relationships.length > 0 ? 2 : 1,
                             image: image,
+                            // relationship_count: character.relationships.length,
+                            // size: Math.max(MIN_NODE_SIZE, Math.min(MAX_NODE_SIZE, (MAX_NODE_SIZE - MIN_NODE_SIZE) * (character.relationships.length / maxRelationshipCount) + MIN_NODE_SIZE)),
                         });
                         if (character.relationships && character.relationships.length > 0) {
                             character.relationships.forEach((relationship) => {
@@ -151,20 +155,48 @@ function RouteSourcesObject() {
                                     labels: { forward: relationship_type, reverse: reciprocal_relationship_type },
                                     color: relationship.relationship_type ? getRelationshipColor(relationship.relationship_type) : getRelationshipColor(relationship.reciprocal_relationship_type),
                                     same_labels: relationship_type === reciprocal_relationship_type,
+                                    visualize: relationship.visualize,
                                 });
                             });
                         }
                     };
 
+                    
                     _relationships = reprocessRelationshipsForChart(_relationships);
+                    let relationshipCounts = {};
+                    _relationships.forEach((relationship) => {
+                        // if(relationship.visualize === false) return;
+                        let source = relationship.source;
+                        let target = relationship.target;
+                        if (!relationshipCounts[source]) {
+                            relationshipCounts[source] = 0;
+                        }
+                        if (!relationshipCounts[target]) {
+                            relationshipCounts[target] = 0;
+                        }
 
+                        relationshipCounts[source]++;
+                        relationshipCounts[target]++;
+                    });
+
+                    let maxRelationshipCount = Math.max(...Object.values(relationshipCounts));
+                    console.log(relationshipCounts);
+
+                    _relData.characters.forEach((character) => {
+                        let relationshipCount = relationshipCounts[character.id] || 0;
+                        character.relationship_count = relationshipCount;
+                        character.size = Math.max(MIN_NODE_SIZE, Math.min(MAX_NODE_SIZE, (MAX_NODE_SIZE - MIN_NODE_SIZE) * (relationshipCount / maxRelationshipCount) + MIN_NODE_SIZE));
+                    });
+
+                    
                     _relData.relationships = _relationships;
-
+                    
                     //automatically add curvature to the relationships
                     //graph doesnt do it automatically, so we have to do it manually (every extra relationship between the same to/from is 0.1 more curvature compared to the previous one)
-
+                    
                     const relationshipCurvature = {};
                     _relData.relationships.forEach((relationship) => {
+                        if(relationship.visualize === false) return;
                         const key = `${relationship.source}-${relationship.target}`;
                         if (!relationshipCurvature[key]) {
                             relationshipCurvature[key] = 0;
@@ -172,6 +204,7 @@ function RouteSourcesObject() {
                         relationshipCurvature[key] += 0.1;
                         relationship.curvature = relationshipCurvature[key];
                     });
+                    _relData.maxRelationshipCount = maxRelationshipCount;
                 }
 
                 setRelationshipData(_relData);
@@ -238,7 +271,9 @@ function RouteSourcesObject() {
                                 ref={fgRef}
                                 width={width}
                                 graphData={{
-                                    nodes: relationshipData?.characters || [],
+                                    // nodes: relationshipData?.characters || [],
+                                    //filter out where nodes[x].relationship_count === 0
+                                    nodes: relationshipData?.characters?.filter(node => node.relationship_count > 0) || [],
                                     //Duplicate links for both directions
                                     // links: relationshipData?.relationships || [],
                                     //filter out where links[x].visualize === false
@@ -247,7 +282,16 @@ function RouteSourcesObject() {
                                 nodeLabel="name"
                                 nodeAutoColorBy="group"
                                 nodeCanvasObject={(node, ctx, globalScale) => {
-                                    const size = 28;
+                                    //use globalScale, but reduce the scaling
+                                    //1 = 1
+                                    //0.5 = 0.75
+                                    //...
+                                    //2 = 1.5
+                                    //...
+                                    let adjustedGlobalScale = (globalScale * 2) / globalScale;
+                                    const size = (node.size || 16) / adjustedGlobalScale * 2;
+
+                                    // const size = 28;
                                     // ctx.drawImage(node.image, node.x - size / 2, node.y - size / 2, size, size);
 
                                     let maxRes = { width: size, height: size };
@@ -281,21 +325,23 @@ function RouteSourcesObject() {
                                     ctx.restore();
 
                                     //dont draw if zoomed out too much
-                                    if (globalScale < 0.5) return;
+                                    if (adjustedGlobalScale < 0.5) return;
 
-                                    const fontSize = 16 / globalScale;
+                                    const fontSize = 16 / adjustedGlobalScale;
                                     ctx.font = `${fontSize}px Sans-Serif`;
+
+                                    const label = `${getGenderLabel(node.gender).symbol}${node.name}`;
 
                                     ctx.fillStyle = 'white';
                                     ctx.shadowColor = 'black';
-                                    ctx.shadowBlur = 2 / globalScale;
-                                    ctx.lineWidth = 1 / globalScale;
-                                    ctx.strokeText(node.name, textPosX, textPosY + 10);
+                                    ctx.shadowBlur = 2 / adjustedGlobalScale;
+                                    ctx.lineWidth = 1 / adjustedGlobalScale;
+                                    ctx.strokeText(label, textPosX, textPosY + 10);
                                     ctx.shadowColor = 0;
 
                                     ctx.textAlign = 'center';
                                     ctx.textBaseline = 'middle';
-                                    ctx.fillText(node.name, textPosX, textPosY + 10);
+                                    ctx.fillText(label, textPosX, textPosY + 10);
                                     ctx.restore();
                                 }}
                                 onNodeClick={(node) => {
@@ -306,7 +352,14 @@ function RouteSourcesObject() {
                                 linkCurvature="curvature"
                                 // linkDirectionalArrowLength={6}
                                 zoomToFit={true}
-                                nodeRelSize={16}
+                                //nodeVal is used to set the size of the node, adjust to globalScale
+                                nodeVal={(node) => {
+                                    //get globalScale
+                                    const globalScale = fgRef.current?.zoom() || 1;
+                                    let adjustedGlobalScale = (globalScale * 2) / globalScale;
+                                    const size = (node.size || 16) / adjustedGlobalScale * 2;
+                                    return size;
+                                }}
                                 onNodeDragEnd={(node) => {
                                     node.fx = node.x;
                                     node.fy = node.y;
@@ -318,7 +371,7 @@ function RouteSourcesObject() {
                                 linkDirectionalArrowColor={'color'}
                                 linkCanvasObjectMode={() => 'after'}
                                 linkCanvasObject={(link, ctx, globalScale) => {
-                                    const MAX_FONT_SIZE = 4;
+                                    const MAX_FONT_SIZE = 12 / globalScale;
                                     const LABEL_NODE_MARGIN = 8 / globalScale;
 
                                     const start = link.source;
@@ -362,7 +415,9 @@ function RouteSourcesObject() {
 
                                     ctx.textAlign = 'center';
                                     ctx.textBaseline = 'middle';
-                                    ctx.fillStyle = 'white';
+                                    // ctx.fillStyle = 'white';
+                                    //use line color
+                                    ctx.fillStyle = link.color || 'white';
                                     ctx.fillText(label, 0, 0);
                                     ctx.restore();
                                 }}

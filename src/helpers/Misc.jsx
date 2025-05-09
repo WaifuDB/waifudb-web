@@ -350,10 +350,12 @@ const remappableRelationships = [
     { a: "brother-in-law", b: "sister-in-law", label: "sibling-in-law" },
     { a: "half-brother", b: "half-sister", label: "half-sibling" },
     { a: "step-brother", b: "step-sister", label: "step-sibling" },
+    { a: "adoptive brother", b: "adoptive sister", label: "adoptive sibling" },
     { a: "husband", b: "wife", label: "married" },
     { a: "boyfriend", b: "girlfriend", label: "partner" },
     { a: "ex-boyfriend", b: "ex-girlfriend", label: "ex-partner" },
     { a: "ex-husband", b: "ex-wife", label: "divorced" },
+    { a: "fiancée", b: "fiancée", label: "engaged" },
 ]
 
 //these indicate no real ties other than emotional ones or connections with unknown ties in between (distance relatives for example)
@@ -371,13 +373,16 @@ const dashableRelationships = [
     'former-{relationship}',
     'former {relationship}',
     'crush',
-    'relative'
+    'relative',
+    'love interest',
+    'harem candidate',
+    'divorced',
 ]
 
 const removableOpposites = [
     //for example; if maid, remove the opposite 'master' label
-    'maid', 'servant', 'slave', 'pet', 'butler', 
-    '{any}father', '{any}mother',
+    'maid', 'servant', 'slave', 'pet', 'butler',
+    '{any}father', '{any}mother', 'creator'
 ]
 
 export function reprocessRelationshipsForChart(relationships) {
@@ -425,8 +430,26 @@ export function reprocessRelationshipsForChart(relationships) {
 
     _relationships = _relationships.flatMap(rel => [
         //if the relationship is the same in both directions, only add one of them
-        { source: rel.from, target: rel.to, label: rel.labels.forward, color: rel.color, curvature: rel.curvature, same_labels: rel.same_labels, distance: rel.distance },
-        ...(rel.same_labels ? [] : [{ source: rel.to, target: rel.from, label: rel.labels.reverse, color: rel.color, curvature: rel.curvature, same_labels: rel.same_labels, distance: rel.distance }]),
+        {
+            source: rel.from,
+            target: rel.to,
+            label: rel.labels.forward,
+            color: rel.color,
+            curvature: rel.curvature,
+            same_labels: rel.same_labels,
+            distance: rel.distance,
+            visualize: rel.visualize === 1 ? true : false,
+        },
+        ...(rel.same_labels ? [] : [{
+            source: rel.to,
+            target: rel.from,
+            label: rel.labels.reverse,
+            color: rel.color,
+            curvature: rel.curvature,
+            same_labels: rel.same_labels,
+            distance: rel.distance,
+            visualize: rel.visualize === 1 ? true : false,
+        }]),
     ]);
 
     _relationships = _relationships.filter((relationship) => {
@@ -443,43 +466,6 @@ export function reprocessRelationshipsForChart(relationships) {
         });
         return { ...relationship, dashed: isDashed };
     });
-
-    //hide unnecessary relationships visually
-    //example:
-    // a: sister1
-    // b: sister2
-    // c: mother
-    // d: father
-    // if sister1 and sister2 have the same parents, add an extra property to their relationship ('visualize: false')
-    // _relationships = _relationships.map((relationship) => {
-    //     // Check if the relationship is a sibling relationship
-    //     if(relationship.label === 'sibling' || relationship.label === 'sister' || relationship.label === 'brother') {
-    //         let parent_ids = [];
-
-    //         _relationships.forEach((rel) => {
-    //             if (rel.label === 'mother' || rel.label === 'father' || rel.label === 'parent') {
-    //                 if (rel.source === relationship.source || rel.target === relationship.source) {
-    //                     parent_ids.push(rel.target);
-    //                 } else if (rel.source === relationship.target || rel.target === relationship.target) {
-    //                     parent_ids.push(rel.source);
-    //                 }
-    //             }
-    //         });
-
-    //         // Remove own ids from parent_ids
-    //         parent_ids = parent_ids.filter(id => id !== relationship.source && id !== relationship.target);
-
-    //         if(parent_ids.length === 2){
-    //             relationship.visualize = false; // Hide the relationship visually
-    //         }else{
-    //             relationship.visualize = true; // Show the relationship visually
-    //         }
-    //     }
-
-    //     return relationship;
-    // });
-
-    // console.log(_relationships);
 
     return _relationships;
 }
