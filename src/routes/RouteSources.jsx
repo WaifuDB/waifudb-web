@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { getAPIUrl } from "../helpers/API";
 import { Box, Card, CardActionArea, CardContent, CardMedia, Grid, Stack, Typography } from "@mui/material";
-import { getGenderLabel, getRelationshipColor, reprocessRelationshipsForChart } from "../helpers/Misc";
+import { getGenderLabel, getRelationshipType, reprocessRelationshipsForChart } from "../helpers/Misc";
 import ForceGraph2D from 'react-force-graph-2d';
 import { useResizeDetector } from "react-resize-detector";
 import { fit } from "object-fit-math";
@@ -149,11 +149,14 @@ function RouteSourcesObject() {
                                 let relationship_type = relationship.relationship_type;
                                 let reciprocal_relationship_type = relationship.reciprocal_relationship_type;
 
+                                let relationshipType = relationship.relationship_type ? getRelationshipType(relationship.relationship_type) : getRelationshipType(relationship.reciprocal_relationship_type);
+
                                 _relationships.push({
                                     from: relationship.from_id,
                                     to: relationship.to_id,
                                     labels: { forward: relationship_type, reverse: reciprocal_relationship_type },
-                                    color: relationship.relationship_type ? getRelationshipColor(relationship.relationship_type) : getRelationshipColor(relationship.reciprocal_relationship_type),
+                                    color: relationshipType.color,
+                                    type: relationshipType.type,
                                     same_labels: relationship_type === reciprocal_relationship_type,
                                     visualize: relationship.visualize,
                                 });
@@ -165,7 +168,7 @@ function RouteSourcesObject() {
                     _relationships = reprocessRelationshipsForChart(_relationships);
                     let relationshipCounts = {};
                     _relationships.forEach((relationship) => {
-                        // if(relationship.visualize === false) return;
+                        if(relationship.visualize === false) return;
                         let source = relationship.source;
                         let target = relationship.target;
                         if (!relationshipCounts[source]) {
@@ -325,9 +328,9 @@ function RouteSourcesObject() {
                                     ctx.restore();
 
                                     //dont draw if zoomed out too much
-                                    if (adjustedGlobalScale < 0.5) return;
+                                    if (globalScale < 0.5) return;
 
-                                    const fontSize = 16 / adjustedGlobalScale;
+                                    const fontSize = (node.size || 16) / adjustedGlobalScale * 0.5;
                                     ctx.font = `${fontSize}px Sans-Serif`;
 
                                     const label = `${getGenderLabel(node.gender).symbol}${node.name}`;

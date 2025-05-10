@@ -2,7 +2,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { getAPIUrl } from "../helpers/API";
-import { getAgeRangeLabel, getBMI, getBMICategory, getBodyType, getBreastBandSize, getCupSizeLabel, getGenderLabel, getRelationshipColor, getZodiacSign, MODAL_STYLE, ShowNotification, sortRelationships } from "../helpers/Misc";
+import { getAgeRangeLabel, getBMI, getBMICategory, getBodyType, getBreastBandSize, getCupSizeLabel, getGenderLabel, getRelationshipType, getZodiacSign, MODAL_STYLE, ShowNotification, sortRelationships } from "../helpers/Misc";
 import { Box, Button, Card, CardActions, CardContent, CardMedia, Chip, Container, Divider, Grid, IconButton, Modal, Paper, Stack, Tooltip, Typography } from "@mui/material";
 import { useAuth } from "../providers/AuthProvider";
 import AddIcon from '@mui/icons-material/Add';
@@ -46,7 +46,7 @@ function RouteWaifus() {
                 const _type = relationship.to_id == waifuData.id ? relationship.relationship_type : relationship.reciprocal_relationship_type;
                 relationships[targetId].types.push({
                     type: _type,
-                    color: getRelationshipColor(_type)
+                    color: getRelationshipType(_type).color
                     //todo; potential descriptions / contexts
                 });
             });
@@ -234,7 +234,13 @@ function RouteWaifus() {
                                     {GetWaifuStat({ label: "Birth Place", value: data.birth_place })}
                                 </Grid>
                                 <Grid item size={{ sx: 12, md: 3 }}>
-                                    {GetWaifuStat({ label: "Weight", value: data.weight ? `${data.weight}kg` : '' })}
+                                    {GetWaifuStat({ label: "Weight", value: data.weight ? 
+                                        // `${data.weight}kg${data.body_fat?` (${data.body_fat}% body fat)`:''}` 
+                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                            <Typography variant="body2" color="text.secondary">{data.weight}kg</Typography>
+                                            {data.body_fat ? <Chip label={`${data.body_fat}% body fat`} size="small" color="primary" variant="outlined" sx={{ ml: 1 }} /> : ''}
+                                        </Box>
+                                        : '' })}
                                 </Grid>
                                 <Grid item size={{ sx: 12, md: 3 }}>
                                     {GetWaifuStat({ label: "Height", value: data.height ? `${data.height}cm` : '' })}

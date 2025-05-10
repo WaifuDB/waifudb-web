@@ -188,7 +188,7 @@ export function sortRelationships(relationships) {
     //A smart way to sort relationships (ie, Mother/Father go above Wife/Husband, Brother/Sister go under Wife/Husband)
 
     const relationshipOrder = {
-        1: ['mother', 'father', 'step-mother', 'step-father'],
+        1: ['mother', 'father', 'step-mother', 'step-father', 'ancestor', 'descendant', 'guardian', 'creator', 'creation'],
         2: ['uncle', 'aunt'],
         3: ['brother', 'sister', 'step-brother', 'step-sister'],
         4: ['husband', 'wife'],
@@ -228,11 +228,11 @@ export function sortRelationships(relationships) {
 
 const loveRelated = ['boyfriend', 'girlfriend', 'husband', 'wife', 'fiance', 'fiancee', 'fiancée', 'lover', 'partner', 'spouse', 'significant other', 'sweetheart', 'darling', 'beloved', 'soulmate'];
 const potentialLoveRelated = ['harem candidate', 'haremcandidate', 'love interest', 'loveinterest', 'crush'];
-const familyRelated = ['relative', 'mother', 'father', 'brother', 'sister', 'uncle', 'aunt', 'grandmother', 'grandfather', 'cousin', 'daughter', 'son', 'creator', 'creation', 'ward', 'guardian'];
+const familyRelated = ['relative', 'mother', 'father', 'brother', 'sister', 'uncle', 'aunt', 'grandmother', 'grandfather', 'granddaughter', 'grandson', 'cousin', 'daughter', 'son', 'creator', 'creation', 'ward', 'guardian', 'ancestor', 'descendant'];
 const propertyRelated = ['rapist', 'victim', 'master', 'slave', 'owner', 'pet', 'maid', 'servant', 'mistress', 'butler'];
 const other = ['friend', 'enemy', 'rival', 'acquaintance', 'colleague', 'classmate', 'partner'];
 
-export function getRelationshipColor(relationshipLabel) {
+export function getRelationshipType(relationshipLabel) {
     if (!relationshipLabel) return '#FFFFFF'; // Default to white for unknown relationships
     // Love-related become pink, family-related become blue, and the rest are grey
 
@@ -245,12 +245,13 @@ export function getRelationshipColor(relationshipLabel) {
     //ex-relationships: #A9A9A9 (dark grey)
 
     let color = '#FFFFFF'; // Default to white for unknown relationships
+    let type = 'unknown';
 
     let relationship = relationshipLabel.toLowerCase().trim();
     //remove prefixes like 'step-', 'step ', 'foster-', 'foster ' (not similar to 'ex-')
     // relationship = relationship.replace(/^(step|foster|step |foster )/i, '');
     let is_step = false;
-    const prefixes = ['step', 'foster', 'half', 'adoptive', 'in-law', 'in law'];
+    const prefixes = ['step', 'foster', 'half', 'adoptive', 'in-law', 'in law', 'acting'];
     // const suffixes = ['in-law', 'in law'];
     for (const prefix of prefixes) {
         if (relationship.startsWith(prefix + '-') || relationship.startsWith(prefix + ' ') || relationship.startsWith(prefix + '') ||
@@ -262,18 +263,24 @@ export function getRelationshipColor(relationshipLabel) {
 
     if (loveRelated.includes(relationship)) {
         color = '#FF69B4'; // Pink
+        type = 'love';
     } else if (potentialLoveRelated.includes(relationship)) {
         color = '#FFB6C1'; // Light Pink
+        type = 'potential love';
     } else if (familyRelated.includes(relationship)) {
         color = '#ADD8E6'; // Light Blue
+        type = 'family';
     } else if (propertyRelated.includes(relationship)) {
         color = '#8B0000'; // Dark Red
+        type = 'property';
     } else if (other.includes(relationship)) {
         color = '#D3D3D3'; // Light Grey
+        type = 'other';
     }
 
     if (relationship.startsWith('ex-') || relationship.startsWith('ex ') || relationship.startsWith('former ') || relationship === 'divored') {
         color = '#A9A9A9'; // Overrides all
+        type = 'ex-relationship';
     }
 
     // If it's a step relationship, append opacity 'aa'
@@ -281,7 +288,10 @@ export function getRelationshipColor(relationshipLabel) {
         color = color + 'aa'; // Add opacity to the color
     }
 
-    return color;
+    return {
+        color: color,
+        type: type,
+    }
 }
 
 export function getQuadraticXY(t, sx, sy, cp1x, cp1y, ex, ey) {
@@ -352,6 +362,7 @@ const remappableRelationships = [
     { a: "step-brother", b: "step-sister", label: "step-sibling" },
     { a: "adoptive brother", b: "adoptive sister", label: "adoptive sibling" },
     { a: "husband", b: "wife", label: "married" },
+    { a: "acting husband", b: "acting wife", label: "acting married" },
     { a: "boyfriend", b: "girlfriend", label: "partner" },
     { a: "ex-boyfriend", b: "ex-girlfriend", label: "ex-partner" },
     { a: "ex-husband", b: "ex-wife", label: "divorced" },
@@ -377,12 +388,14 @@ const dashableRelationships = [
     'love interest',
     'harem candidate',
     'divorced',
+    'descendant', //unknown how far related they are, child, great-great-great-great-grandchild, etc
+    'ancestor',
 ]
 
 const removableOpposites = [
     //for example; if maid, remove the opposite 'master' label
     'maid', 'servant', 'slave', 'pet', 'butler',
-    '{any}father', '{any}mother', 'creator'
+    '{any}father', '{any}mother', 'creator', 'guardian', 'clone'
 ]
 
 export function reprocessRelationshipsForChart(relationships) {
@@ -435,6 +448,7 @@ export function reprocessRelationshipsForChart(relationships) {
             target: rel.to,
             label: rel.labels.forward,
             color: rel.color,
+            type: rel.type,
             curvature: rel.curvature,
             same_labels: rel.same_labels,
             distance: rel.distance,
@@ -445,6 +459,7 @@ export function reprocessRelationshipsForChart(relationships) {
             target: rel.from,
             label: rel.labels.reverse,
             color: rel.color,
+            type: rel.type,
             curvature: rel.curvature,
             same_labels: rel.same_labels,
             distance: rel.distance,
