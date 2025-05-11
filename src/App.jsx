@@ -15,6 +15,7 @@ import RouteWaifuCreate from './routes/RouteWaifuCreate'
 import RouteWaifus from './routes/RouteWaifus'
 import RouteSources from './routes/RouteSources'
 import RouteWaifuEdit from './routes/RouteWaifuEdit'
+import RouteImageNew from './routes/RouteImageNew'
 
 const theme = createTheme({
   palette: {
@@ -33,9 +34,10 @@ function App() {
     { path: '/login', element: <RouteLogin />, protected: false, },
     { path: '/logout', element: <RouteLogout />, protected: false, },
     { path: '/create', element: <RouteWaifuCreate />, protected: true, creator_only: true, },
-    { path: '/sources/:id?', element: <RouteSources />, protected: false, },
+    { path: '/sources/:id?/:tab?', element: <RouteSources />, protected: false, },
     { path: '/characters/:id', element: <RouteWaifus />, protected: false, },
     { path: '/characters/:id/edit', element: <RouteWaifuEdit />, protected: true, creator_only: true, },
+    { path: '/images/new', element: <RouteImageNew />, protected: true, creator_only: true, },
   ];
 
   const getRoute = (obj, is_child = false) => {

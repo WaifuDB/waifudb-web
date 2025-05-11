@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { getAPIUrl } from "../helpers/API";
 import { getAgeRangeLabel, getBMI, getBMICategory, getBodyType, getBreastBandSize, getCupSizeLabel, getGenderLabel, getRelationshipType, getZodiacSign, MODAL_STYLE, ShowNotification, sortRelationships } from "../helpers/Misc";
-import { Box, Button, Card, CardActions, CardContent, CardMedia, Chip, Container, Divider, Grid, IconButton, Modal, Paper, Stack, Tooltip, Typography } from "@mui/material";
+import { Box, Button, Card, CardActions, CardContent, CardMedia, Chip, Container, Divider, Grid, IconButton, ImageList, ImageListItem, Modal, Paper, Stack, Tooltip, Typography } from "@mui/material";
 import { useAuth } from "../providers/AuthProvider";
 import AddIcon from '@mui/icons-material/Add';
 import WaifuRelationshipEditor from "../components/WaifuRelationshipEditor";
@@ -123,9 +123,14 @@ function RouteWaifus() {
                                         </Button> */}
                                     {
                                         canCreate() && (
-                                            <Button size="small" fullWidth color="primary" component={Link} to={`/characters/${data.id}/edit`} variant="outlined">
-                                                Edit
-                                            </Button>
+                                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, width: '100%' }}>
+                                                <Button size="small" fullWidth color="primary" component={Link} to={`/characters/${data.id}/edit`} variant="contained">
+                                                    Edit
+                                                </Button>
+                                                <Button size="small" fullWidth color="primary" component={Link} to={`/images/new`} variant="outlined">
+                                                    Add Image
+                                                </Button>
+                                            </Box>
                                         )
                                     }
                                 </CardActions>
@@ -155,7 +160,7 @@ function RouteWaifus() {
                                                         }
                                                     });
 
-                                                    if(countRelationships == 0) {
+                                                    if (countRelationships == 0) {
                                                         return null;
                                                     }
 
@@ -170,7 +175,7 @@ function RouteWaifus() {
                                                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                                                                 {
                                                                     displayableRelationships[key].types.map((relationship, index) => {
-                                                                        if(relationship.type == null) {
+                                                                        if (relationship.type == null) {
                                                                             return null;
                                                                         }
                                                                         let relationshipLabel = relationship.type;
@@ -209,9 +214,6 @@ function RouteWaifus() {
                                     {GetWaifuStat({
                                         label: "Age", value: data.age ? <>
                                             <Chip label={data.age} size="small" color="primary" variant="outlined" sx={{ mr: 1 }} />
-                                            {
-                                                data.age < 18 ? <Chip label="Minor" size="small" color="error" variant="outlined" sx={{ mr: 1 }} /> : ''
-                                            }
                                             {getAgeRangeLabel(data.age)}
                                         </> : ''
                                     })}
@@ -234,13 +236,15 @@ function RouteWaifus() {
                                     {GetWaifuStat({ label: "Birth Place", value: data.birth_place })}
                                 </Grid>
                                 <Grid item size={{ sx: 12, md: 3 }}>
-                                    {GetWaifuStat({ label: "Weight", value: data.weight ? 
-                                        // `${data.weight}kg${data.body_fat?` (${data.body_fat}% body fat)`:''}` 
-                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                            <Typography variant="body2" color="text.secondary">{data.weight}kg</Typography>
-                                            {data.body_fat ? <Chip label={`${data.body_fat}% body fat`} size="small" color="primary" variant="outlined" sx={{ ml: 1 }} /> : ''}
-                                        </Box>
-                                        : '' })}
+                                    {GetWaifuStat({
+                                        label: "Weight", value: data.weight ?
+                                            // `${data.weight}kg${data.body_fat?` (${data.body_fat}% body fat)`:''}` 
+                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                <Typography variant="body2" color="text.secondary">{data.weight}kg</Typography>
+                                                {data.body_fat ? <Chip label={`${data.body_fat}% body fat`} size="small" color="primary" variant="outlined" sx={{ ml: 1 }} /> : ''}
+                                            </Box>
+                                            : ''
+                                    })}
                                 </Grid>
                                 <Grid item size={{ sx: 12, md: 3 }}>
                                     {GetWaifuStat({ label: "Height", value: data.height ? `${data.height}cm` : '' })}
@@ -279,14 +283,52 @@ function RouteWaifus() {
                                     })}
                                 </Grid>
                                 <Grid item size={{ md: 12 }}>
-                                    {GetWaifuStat({ label: "Description", value: data.description })}
-                                </Grid>
-                                <Grid item size={{ md: 12 }}>
                                     {GetWaifuStat({
                                         label: "Sources", value: data.sources ? data.sources.map((source, index) => (
                                             <Chip key={index} label={source.name} size="small" color="primary" variant="outlined" sx={{ mr: 1 }} component={Link} to={`/sources/${source.id}`} />
                                         )) : ''
                                     })}
+                                </Grid>
+                                <Grid item size={{ md: 12 }}>
+                                    {GetWaifuStat({ label: "Description", value: data.description })}
+                                </Grid>
+                                <Grid item size={{ md: 12 }}>
+                                    <Typography variant="body1" gutterBottom>Gallery
+                                        {
+                                            data.images && data.images.length > 0 ? <Chip label={`${data.images.length}`} size="small" color="primary" variant="outlined" sx={{ ml: 1 }} /> : ''
+                                        }
+                                    </Typography>
+                                    {
+                                        data.images && data.images.length > 0 ? <>
+                                            <ImageList
+                                                sx={{ width: '100%', height: 'auto' }}
+                                                variant="masonry"
+                                                cols={6}
+                                            >
+                                                {
+                                                    data.images.map((item) => (
+                                                        <ImageListItem key={item.id} sx={{ width: '100%', height: 'auto' }}>
+                                                            <img
+                                                                // src={`${item.image_url}?fit=crop&auto=format`}
+                                                                // srcSet={`${item.image_url}?fit=crop&auto=format&dpr=2 2x`}
+                                                                src={`${item.image_url}?w=500&h=500&fit=crop&auto=format`}
+                                                                srcSet={`${item.image_url}?w=500&h=500&fit=crop&auto=format&dpr=2 2x`}
+                                                                alt={item.name}
+                                                                loading="lazy"
+                                                                style={{
+                                                                    backgroundColor: '#f0f0f0',
+                                                                    borderRadius: '4px',
+                                                                }}
+                                                            />
+                                                        </ImageListItem>
+                                                    ))
+                                                }
+                                            </ImageList>
+                                        </> : <Typography variant="body2" color="text.secondary" sx={{
+                                            fontStyle: 'italic',
+                                            color: 'gray',
+                                        }}>No images found</Typography>
+                                    }
                                 </Grid>
                             </Grid>
                         </Grid>
