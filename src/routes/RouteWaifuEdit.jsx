@@ -16,13 +16,13 @@ function RouteWaifuEdit() {
     const onSubmit = async (data) => {
         try{
             const url = `${getAPIUrl()}/characters/edit`;
+
             const body = {
                 id: id.split('-')[0], // Get the ID from the URL (before the dash)
                 name: data.name,
                 jp_name: data.jp_name,
                 age: data.age,
                 gender: data.gender,
-                image_url: data.image_url,
                 birth_place: data.birthplace,
                 birth_date: data.birthdate,
                 blood_type: data.blood_type,
@@ -100,7 +100,7 @@ function RouteWaifuEdit() {
     return (
         <>
             <h1>Edit Character</h1>
-            <WaifuEditor prefill={data} onSubmit={onSubmit} />
+            <WaifuEditor prefill={data} onSubmit={onSubmit} isEditing={true} />
         </>
     )
 }

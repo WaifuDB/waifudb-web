@@ -7,6 +7,7 @@ import { getGenderLabel, getRelationshipType, reprocessRelationshipsForChart, Ta
 import ForceGraph2D from 'react-force-graph-2d';
 import { useResizeDetector } from "react-resize-detector";
 import { fit } from "object-fit-math";
+import ImageGallery from "../components/ImageGallery";
 
 function RouteSources() {
     const { id } = useParams();
@@ -101,17 +102,143 @@ function RouteSourcesObject() {
     const [data, setData] = useState(null);
     const [relationshipData, setRelationshipData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState(Number(tab ? Object.keys(SOURCE_TABS).find(key => SOURCE_TABS[key].url_key === tab) : 0));
+    const [activeTab, setActiveTab] = useState(0);
     const navigate = useNavigate();
 
+    const loadSource = async () => {
+        try {
+            setIsLoading(true);
+            const response = await axios.get(`${getAPIUrl()}/sources/get/${id}`);
+            if (response.status !== 200) {
+                throw new Error('Failed to fetch sources data');
+            }
+            const sourcesData = response.data;
+            if (!sourcesData) {
+                throw new Error('No data found for the sources');
+            }
+            setData(sourcesData);
+
+            //reprocess relationship data (for chart)
+            let _relData = {
+                characters: [
+                    // { id: character.id, name: character.name}
+                ],
+                relationships: [
+                    // { from: character.id, to: character.id, labels: { forward: "brother", reverse: "sister" }, ... extra data irrelevant for the example }}
+                ]
+            }
+
+            let _relationships = [];
+            if (sourcesData.characters && sourcesData.characters.length > 0) {
+                // sourcesData.characters.forEach((character) => {
+                for await (const character of sourcesData.characters) {
+                    let image = new Image();
+                    // image.src = character.image_url || "https://placehold.co/400";
+                    image.src = character.remote_image_id ? `https://cdn.kirino.sh/i/${character.remote_image_id}.png` : "https://placehold.co/400";
+                    image.crossOrigin = "anonymous"; // to avoid CORS issues
+
+                    // maxRelationshipCount = Math.max(maxRelationshipCount, character.relationships.length || 0);
+                    _relData.characters.push({
+                        id: character.id,
+                        gender: character.gender,
+                        name: character.name,
+                        image_url: character.remote_image_id ? `https://cdn.kirino.sh/i/${character.remote_image_id}.png` : "https://placehold.co/400",
+                        image: image,
+                        // relationship_count: character.relationships.length,
+                        // size: Math.max(MIN_NODE_SIZE, Math.min(MAX_NODE_SIZE, (MAX_NODE_SIZE - MIN_NODE_SIZE) * (character.relationships.length / maxRelationshipCount) + MIN_NODE_SIZE)),
+                    });
+                    if (character.relationships && character.relationships.length > 0) {
+                        character.relationships.forEach((relationship) => {
+                            let relationship_type = relationship.relationship_type;
+                            let reciprocal_relationship_type = relationship.reciprocal_relationship_type;
+
+                            let relationshipType = relationship.relationship_type ? getRelationshipType(relationship.relationship_type) : getRelationshipType(relationship.reciprocal_relationship_type);
+
+                            _relationships.push({
+                                from: relationship.from_id,
+                                to: relationship.to_id,
+                                labels: { forward: relationship_type, reverse: reciprocal_relationship_type },
+                                color: relationshipType.color,
+                                type: relationshipType.type,
+                                same_labels: relationship_type === reciprocal_relationship_type,
+                                visualize: relationship.visualize,
+                            });
+                        });
+                    }
+                };
+
+
+                _relationships = reprocessRelationshipsForChart(_relationships);
+                let relationshipCounts = {};
+                _relationships.forEach((relationship) => {
+                    if (relationship.visualize === false) return;
+                    let source = relationship.source;
+                    let target = relationship.target;
+                    if (!relationshipCounts[source]) {
+                        relationshipCounts[source] = 0;
+                    }
+                    if (!relationshipCounts[target]) {
+                        relationshipCounts[target] = 0;
+                    }
+
+                    relationshipCounts[source]++;
+                    relationshipCounts[target]++;
+                });
+
+                let maxRelationshipCount = Math.max(...Object.values(relationshipCounts));
+                console.log(relationshipCounts);
+
+                _relData.characters.forEach((character) => {
+                    let relationshipCount = relationshipCounts[character.id] || 0;
+                    character.relationship_count = relationshipCount;
+                    character.size = Math.max(MIN_NODE_SIZE, Math.min(MAX_NODE_SIZE, (MAX_NODE_SIZE - MIN_NODE_SIZE) * (relationshipCount / maxRelationshipCount) + MIN_NODE_SIZE));
+                });
+
+
+                _relData.relationships = _relationships;
+
+                //automatically add curvature to the relationships
+                //graph doesnt do it automatically, so we have to do it manually (every extra relationship between the same to/from is 0.1 more curvature compared to the previous one)
+
+                const relationshipCurvature = {};
+                _relData.relationships.forEach((relationship) => {
+                    if (relationship.visualize === false) return;
+                    const key = `${relationship.source}-${relationship.target}`;
+                    if (!relationshipCurvature[key]) {
+                        relationshipCurvature[key] = 0;
+                    }
+                    relationshipCurvature[key] += 0.1;
+                    relationship.curvature = relationshipCurvature[key];
+                });
+                _relData.maxRelationshipCount = maxRelationshipCount;
+            }
+
+            setRelationshipData(_relData);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
     useEffect(() => {
+        if (tab === undefined) {
+            //if no tab is specified, set it to 0
+            navigate(`/sources/${id}/${SOURCE_TABS[0].url_key}`);
+            return;
+        }
         //set the active tab based on the URL
         const newActiveTab = Number(Object.keys(SOURCE_TABS).find(key => SOURCE_TABS[key].url_key === tab));
         if (newActiveTab !== undefined) {
             setActiveTab(newActiveTab);
-        }else{
+        } else {
             //if the tab is not found, set it to 0
             setActiveTab(0);
+        }
+
+        //reload source data if the tab changes
+        if (tab !== SOURCE_TABS[activeTab].url_key) {
+            loadSource();
         }
     }, [tab]);
 
@@ -132,117 +259,7 @@ function RouteSourcesObject() {
 
     useEffect(() => {
         (async () => {
-            try {
-                const response = await axios.get(`${getAPIUrl()}/sources/get/${id}`);
-                if (response.status !== 200) {
-                    throw new Error('Failed to fetch sources data');
-                }
-                const sourcesData = response.data;
-                if (!sourcesData) {
-                    throw new Error('No data found for the sources');
-                }
-                setData(sourcesData);
-
-                //reprocess relationship data (for chart)
-                let _relData = {
-                    characters: [
-                        // { id: character.id, name: character.name}
-                    ],
-                    relationships: [
-                        // { from: character.id, to: character.id, labels: { forward: "brother", reverse: "sister" }, ... extra data irrelevant for the example }}
-                    ]
-                }
-
-                let _relationships = [];
-                if (sourcesData.characters && sourcesData.characters.length > 0) {
-                    // sourcesData.characters.forEach((character) => {
-                    for await (const character of sourcesData.characters) {
-                        let image = new Image();
-                        image.src = character.image_url || "https://placehold.co/400";
-                        image.crossOrigin = "anonymous"; // to avoid CORS issues
-
-                        // maxRelationshipCount = Math.max(maxRelationshipCount, character.relationships.length || 0);
-                        _relData.characters.push({
-                            id: character.id,
-                            gender: character.gender,
-                            name: character.name,
-                            image_url: character.image_url,
-                            image: image,
-                            // relationship_count: character.relationships.length,
-                            // size: Math.max(MIN_NODE_SIZE, Math.min(MAX_NODE_SIZE, (MAX_NODE_SIZE - MIN_NODE_SIZE) * (character.relationships.length / maxRelationshipCount) + MIN_NODE_SIZE)),
-                        });
-                        if (character.relationships && character.relationships.length > 0) {
-                            character.relationships.forEach((relationship) => {
-                                let relationship_type = relationship.relationship_type;
-                                let reciprocal_relationship_type = relationship.reciprocal_relationship_type;
-
-                                let relationshipType = relationship.relationship_type ? getRelationshipType(relationship.relationship_type) : getRelationshipType(relationship.reciprocal_relationship_type);
-
-                                _relationships.push({
-                                    from: relationship.from_id,
-                                    to: relationship.to_id,
-                                    labels: { forward: relationship_type, reverse: reciprocal_relationship_type },
-                                    color: relationshipType.color,
-                                    type: relationshipType.type,
-                                    same_labels: relationship_type === reciprocal_relationship_type,
-                                    visualize: relationship.visualize,
-                                });
-                            });
-                        }
-                    };
-
-
-                    _relationships = reprocessRelationshipsForChart(_relationships);
-                    let relationshipCounts = {};
-                    _relationships.forEach((relationship) => {
-                        if (relationship.visualize === false) return;
-                        let source = relationship.source;
-                        let target = relationship.target;
-                        if (!relationshipCounts[source]) {
-                            relationshipCounts[source] = 0;
-                        }
-                        if (!relationshipCounts[target]) {
-                            relationshipCounts[target] = 0;
-                        }
-
-                        relationshipCounts[source]++;
-                        relationshipCounts[target]++;
-                    });
-
-                    let maxRelationshipCount = Math.max(...Object.values(relationshipCounts));
-                    console.log(relationshipCounts);
-
-                    _relData.characters.forEach((character) => {
-                        let relationshipCount = relationshipCounts[character.id] || 0;
-                        character.relationship_count = relationshipCount;
-                        character.size = Math.max(MIN_NODE_SIZE, Math.min(MAX_NODE_SIZE, (MAX_NODE_SIZE - MIN_NODE_SIZE) * (relationshipCount / maxRelationshipCount) + MIN_NODE_SIZE));
-                    });
-
-
-                    _relData.relationships = _relationships;
-
-                    //automatically add curvature to the relationships
-                    //graph doesnt do it automatically, so we have to do it manually (every extra relationship between the same to/from is 0.1 more curvature compared to the previous one)
-
-                    const relationshipCurvature = {};
-                    _relData.relationships.forEach((relationship) => {
-                        if (relationship.visualize === false) return;
-                        const key = `${relationship.source}-${relationship.target}`;
-                        if (!relationshipCurvature[key]) {
-                            relationshipCurvature[key] = 0;
-                        }
-                        relationshipCurvature[key] += 0.1;
-                        relationship.curvature = relationshipCurvature[key];
-                    });
-                    _relData.maxRelationshipCount = maxRelationshipCount;
-                }
-
-                setRelationshipData(_relData);
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            } finally {
-                setIsLoading(false);
-            }
+            await loadSource();
         })();
     }, [id]);
 
@@ -288,7 +305,7 @@ function RouteSourcesObject() {
                                         >
                                             <CardMedia
                                                 component="img"
-                                                image={character.image_url || "https://placehold.co/400"}
+                                                image={character.remote_image_id ? `https://cdn.kirino.sh/i/${character.remote_image_id}.png` : "https://placehold.co/400"}
                                                 alt={character.name}
                                                 sx={{ objectFit: 'cover', objectPosition: 'top', backgroundColor: '#f0f0f0' }}
                                                 style={{ width: '100%', height: 'auto', aspectRatio: '1 / 1.25' }}
@@ -476,30 +493,7 @@ function RouteSourcesObject() {
                 </Box>
             </TabPanel>
             <TabPanel value={activeTab} index={1}>
-                <ImageList
-                    sx={{ width: '100%', height: 'auto' }}
-                    variant="masonry"
-                    cols={8}
-                >
-                    {
-                        data.images.map((item) => (
-                            <ImageListItem key={item.id} sx={{ width: '100%', height: 'auto' }}>
-                                <img
-                                    // src={`${item.image_url}?fit=crop&auto=format`}
-                                    // srcSet={`${item.image_url}?fit=crop&auto=format&dpr=2 2x`}
-                                    src={`${item.image_url}?w=500&h=500&fit=crop&auto=format`}
-                                    srcSet={`${item.image_url}?w=500&h=500&fit=crop&auto=format&dpr=2 2x`}
-                                    alt={item.name}
-                                    loading="lazy"
-                                    style={{
-                                        backgroundColor: '#f0f0f0',
-                                        borderRadius: '4px',
-                                    }}
-                                />
-                            </ImageListItem>
-                        ))
-                    }
-                </ImageList>
+                <ImageGallery image_data={data.images} />
             </TabPanel>
         </>
     );

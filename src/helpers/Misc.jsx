@@ -227,9 +227,20 @@ export function sortRelationships(relationships) {
     return [...sortedRelationships.map(item => item.relationship), ...unsortedRelationships];
 }
 
-const loveRelated = ['boyfriend', 'girlfriend', 'husband', 'wife', 'fiance', 'fiancee', 'fiancée', 'lover', 'partner', 'spouse', 'significant other', 'sweetheart', 'darling', 'beloved', 'soulmate'];
-const potentialLoveRelated = ['harem candidate', 'haremcandidate', 'love interest', 'loveinterest', 'crush'];
-const familyRelated = ['relative', 'mother', 'father', 'brother', 'sister', 'uncle', 'aunt', 'grandmother', 'grandfather', 'granddaughter', 'grandson', 'cousin', 'daughter', 'son', 'creator', 'creation', 'ward', 'guardian', 'ancestor', 'descendant'];
+const loveRelated = [
+    'boyfriend', 'girlfriend', 
+    'husband', 'wife', 
+    'fiance', 'fiancee', 'fiancée', 'lover', 'partner', 'spouse', 'significant other', 'sweetheart', 'darling', 'beloved', 'soulmate'];
+const potentialLoveRelated = [
+    'harem candidate', 'haremcandidate', 
+    'love interest', 'loveinterest', 'crush'];
+const familyRelated = [
+    'relative', 'mother', 'father', 'brother', 'sister', 
+    'uncle', 'aunt', 'grandmother', 'grandfather', 'granddaughter', 'grandson', 
+    'cousin', 'daughter', 'son', 
+    'creator', 'creation', 
+    'ward', 'guardian', 
+    'ancestor', 'descendant'];
 const propertyRelated = ['rapist', 'victim', 'master', 'slave', 'owner', 'pet', 'maid', 'servant', 'mistress', 'butler'];
 const other = ['friend', 'enemy', 'rival', 'acquaintance', 'colleague', 'classmate', 'partner'];
 
@@ -255,8 +266,7 @@ export function getRelationshipType(relationshipLabel) {
     const prefixes = ['step', 'foster', 'half', 'adoptive', 'in-law', 'in law', 'acting'];
     // const suffixes = ['in-law', 'in law'];
     for (const prefix of prefixes) {
-        if (relationship.startsWith(prefix + '-') || relationship.startsWith(prefix + ' ') || relationship.startsWith(prefix + '') ||
-            relationship.endsWith('-' + prefix) || relationship.endsWith(' ' + prefix) || relationship.endsWith(prefix)) {
+        if (relationship.startsWith(prefix + '') || relationship.endsWith(prefix)) {
             relationship = relationship.replace(new RegExp(`^(${prefix}-|${prefix} )`, 'i'), '');
             is_step = true;
         }
@@ -361,6 +371,7 @@ const remappableRelationships = [
     { a: "brother-in-law", b: "sister-in-law", label: "sibling-in-law" },
     { a: "half-brother", b: "half-sister", label: "half-sibling" },
     { a: "step-brother", b: "step-sister", label: "step-sibling" },
+    { a: "twin brother", b: "twin sister", label: "twin sibling" },
     { a: "adoptive brother", b: "adoptive sister", label: "adoptive sibling" },
     { a: "husband", b: "wife", label: "married" },
     { a: "acting husband", b: "acting wife", label: "acting married" },

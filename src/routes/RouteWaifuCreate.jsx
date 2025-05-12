@@ -15,7 +15,6 @@ function RouteWaifuCreate() {
                 jp_name: data.jp_name,
                 age: data.age,
                 gender: data.gender,
-                image_url: data.image_url,
                 birth_place: data.birthplace,
                 birth_date: data.birthdate,
                 height: data.height,
@@ -37,6 +36,7 @@ function RouteWaifuCreate() {
                     "Content-Type": "application/json",
                     "Accept": "application/json"
                 },
+                timeout: 10000, // 30 seconds timeout
             });
 
             const dataResponse = response.data;
@@ -55,7 +55,7 @@ function RouteWaifuCreate() {
     return (
         <>
             <h1>Add Character</h1>
-            <WaifuEditor onSubmit={onSubmit} />
+            <WaifuEditor onSubmit={onSubmit} isEditing={false} />
         </>
     )
 }

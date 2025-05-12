@@ -3,19 +3,24 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { getAPIUrl } from "../helpers/API";
 import { getAgeRangeLabel, getBMI, getBMICategory, getBodyType, getBreastBandSize, getCupSizeLabel, getGenderLabel, getRelationshipType, getZodiacSign, MODAL_STYLE, ShowNotification, sortRelationships } from "../helpers/Misc";
-import { Box, Button, Card, CardActions, CardContent, CardMedia, Chip, Container, Divider, Grid, IconButton, ImageList, ImageListItem, Modal, Paper, Stack, Tooltip, Typography } from "@mui/material";
+import { Box, Button, Card, CardActionArea, CardActions, CardContent, CardMedia, Chip, Container, Divider, Grid, IconButton, ImageList, ImageListItem, Modal, Paper, Stack, Tooltip, Typography } from "@mui/material";
 import { useAuth } from "../providers/AuthProvider";
 import AddIcon from '@mui/icons-material/Add';
 import WaifuRelationshipEditor from "../components/WaifuRelationshipEditor";
+import ImageGallery from "../components/ImageGallery";
+import FileUploadBox from "../components/FileUploadBox";
 
 function RouteWaifus() {
     const [data, setData] = useState(null);
     const [displayableRelationships, setDisplayableRelationships] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const { id } = useParams();
-    const { canCreate } = useAuth();
+    const { canCreate, user, token } = useAuth();
 
     const [isRelationshipEditOpen, setIsRelationshipEditOpen] = useState(false);
+    const [isImageEditOpen, setIsImageEditOpen] = useState(false);
+
+    const [inputImageFile, setInputImageFile] = useState(null);
 
     const onReload = async () => {
         //split "id" by dash and only take the first part
@@ -61,6 +66,48 @@ function RouteWaifus() {
         }
     }
 
+    const onImageUpdate = async () => {
+        if (!canCreate()) {
+            ShowNotification("You don't have permission to do this", "error");
+            return;
+        }
+
+        try {
+            if (!inputImageFile) {
+                throw new Error("No image file selected");
+            }
+            const url = `${getAPIUrl()}/characters/edit/image`;
+            console.log(inputImageFile);
+            const formData = new FormData();
+            formData.append("image", inputImageFile, `charadb_${Date.now()}`);
+            formData.append("id", data.id);
+            formData.append("user_id", user.id);
+            formData.append("token", token);
+
+            const response = await axios.post(url, formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                    "Accept": "application/json"
+                },
+                timeout: 10000,
+            });
+
+            const dataResponse = response.data;
+
+            if (response.status !== 200) { // 200 OK
+                throw new Error(dataResponse.error || "Unknown error occurred.");
+            }
+
+            ShowNotification("Image updated successfully", "success");
+            onReload();
+            //close the modal
+            setIsImageEditOpen(false);
+        } catch (err) {
+            console.error(err);
+            ShowNotification(err.message, "error");
+        }
+    }
+
     useEffect(() => {
         if (!id) {
             console.error('ID is required to fetch waifu data');
@@ -88,6 +135,24 @@ function RouteWaifus() {
                                 <WaifuRelationshipEditor onReload={onReload} primaryCharacter={data} />
                             </Paper>
                         </Modal>
+                        <Modal
+                            open={isImageEditOpen}
+                            onClose={() => setIsImageEditOpen(false)}
+                        >
+                            <Paper sx={MODAL_STYLE}>
+                                <Button variant="outlined" color="primary" onClick={onImageUpdate} sx={{ mb: 2 }}>
+                                    Update
+                                </Button>
+                                <Box sx={{
+                                    maxWidth: 'sm',
+                                    maxHeight: '90vh',
+                                    overflowY: 'auto',
+                                    overflowX: 'hidden',
+                                }}>
+                                    <FileUploadBox onChange={(file) => setInputImageFile(file)} />
+                                </Box>
+                            </Paper>
+                        </Modal>
                     </>
                 )
             }
@@ -97,14 +162,24 @@ function RouteWaifus() {
                         <Grid size={3}>
                             {/* big image (or grey if the url is null) */}
                             <Card elevation={2}>
-                                <CardMedia
-                                    component="img"
-                                    image={data.image_url || "https://placehold.co/400"}
-                                    alt={data.name}
-                                    //show top side of the image
-                                    sx={{ objectFit: 'cover', objectPosition: 'top', backgroundColor: '#f0f0f0' }}
-                                    style={{ width: '100%', height: 'auto', aspectRatio: '1 / 1.25' }}
-                                />
+                                <CardActionArea
+                                    //opens the image edit modal
+                                    onClick={() => {
+                                        if (canCreate()) {
+                                            setIsImageEditOpen(true);
+                                        }
+                                    }}
+                                >
+                                    <CardMedia
+                                        component="img"
+                                        // image={data.image_url || "https://placehold.co/400"}
+                                        image={data.remote_image_id ? `https://cdn.kirino.sh/i/${data.remote_image_id}.png` : "https://placehold.co/400"}
+                                        alt={data.name}
+                                        //show top side of the image
+                                        sx={{ objectFit: 'cover', objectPosition: 'top', backgroundColor: '#f0f0f0' }}
+                                        style={{ width: '100%', height: 'auto', aspectRatio: '1 / 1.25' }}
+                                    />
+                                </CardActionArea>
                                 <CardContent>
                                     <Typography variant="h5" component="div" gutterBottom>
                                         {data.name}
@@ -300,30 +375,7 @@ function RouteWaifus() {
                                     </Typography>
                                     {
                                         data.images && data.images.length > 0 ? <>
-                                            <ImageList
-                                                sx={{ width: '100%', height: 'auto' }}
-                                                variant="masonry"
-                                                cols={6}
-                                            >
-                                                {
-                                                    data.images.map((item) => (
-                                                        <ImageListItem key={item.id} sx={{ width: '100%', height: 'auto' }}>
-                                                            <img
-                                                                // src={`${item.image_url}?fit=crop&auto=format`}
-                                                                // srcSet={`${item.image_url}?fit=crop&auto=format&dpr=2 2x`}
-                                                                src={`${item.image_url}?w=500&h=500&fit=crop&auto=format`}
-                                                                srcSet={`${item.image_url}?w=500&h=500&fit=crop&auto=format&dpr=2 2x`}
-                                                                alt={item.name}
-                                                                loading="lazy"
-                                                                style={{
-                                                                    backgroundColor: '#f0f0f0',
-                                                                    borderRadius: '4px',
-                                                                }}
-                                                            />
-                                                        </ImageListItem>
-                                                    ))
-                                                }
-                                            </ImageList>
+                                            <ImageGallery image_data={data.images} columns={6} />
                                         </> : <Typography variant="body2" color="text.secondary" sx={{
                                             fontStyle: 'italic',
                                             color: 'gray',

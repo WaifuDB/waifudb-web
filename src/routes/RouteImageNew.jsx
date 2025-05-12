@@ -10,15 +10,16 @@ function RouteImageNew() {
     const onSubmit = async (data) => {
         try{
             const url = `${getAPIUrl()}/images/new`;
-            const body = {
-                image_url: data.image_url,
-                characters: data.characters,
-                user_id: user.id,
-                token: token,
-            }
-            const response = await axios.post(url, body, {
+
+            const formData = new FormData();
+            formData.append("image", data.image, `charadb_${Date.now()}`);
+            formData.append("characters", JSON.stringify(data.characters));
+            formData.append("user_id", user.id);
+            formData.append("token", token);
+
+            const response = await axios.post(url, formData, {
                 headers: {
-                    "Content-Type": "application/json",
+                    "Content-Type": "multipart/form-data",
                     "Accept": "application/json"
                 },
             });
