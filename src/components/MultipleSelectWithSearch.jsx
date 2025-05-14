@@ -89,7 +89,7 @@ function MultipleSelectWithSearch({ options, onUpdate }) {
                             onUpdate(newSelectedOptions);
                         }} dense>
                             <ListItemAvatar>
-                                <Avatar src={option.image_url} />
+                                <Avatar src={`https://cdn.kirino.sh/i/${option.remote_image_id}.jpg`} />
                             </ListItemAvatar>
                             <ListItemIcon>
                                 <Checkbox
