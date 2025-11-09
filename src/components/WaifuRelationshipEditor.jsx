@@ -142,7 +142,7 @@ function WaifuRelationshipEditor({ onReload, primaryCharacter }) {
                                         return (<>
                                             <Typography variant="h6" component="h2" key={character.id}>
                                                 {getGenderLabel(character.gender).symbol} {character.name}
-                                                <IconButton size="small" color="primary" variant="outlined" sx={{ ml: 2 }} onClick={() => {
+                                                <IconButton tabIndex="-1" size="small" color="primary" variant="outlined" sx={{ ml: 2 }} onClick={() => {
                                                     //add empty relationship to the relationships array
                                                     let _rel = {
                                                         id: null,
@@ -171,7 +171,7 @@ function WaifuRelationshipEditor({ onReload, primaryCharacter }) {
                                                             return (
                                                                 <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', mt: 2 }} key={relationship.tempId}>
                                                                     <WaifuRelationshipEditorFields key={relationship.id} from_character={character} to_character={primaryCharacter} relationship={relationship.relationship_type} reciprocal_relationship={relationship.reciprocal_relationship_type} onUpdateValues={onUpdateRelationship} tempId={relationship.tempId} visualize={relationship.visualize} />
-                                                                    <Button variant="outlined" color="error" size="small" sx={{ ml: 1 }} onClick={() => {
+                                                                    <Button tabIndex="-1" variant="outlined" color="error" size="small" sx={{ ml: 1 }} onClick={() => {
                                                                         //remove relationship from the relationships array
                                                                         setRelationships((prev) => {
                                                                             return prev.filter((item) => item.tempId !== relationship.tempId);
@@ -266,7 +266,7 @@ function WaifuRelationshipEditorFields({ tempId, visualize, from_character, to_c
             </Box>
             <Box>
                 {/* checkbox to toggle visualize on or off */}
-                <FormControlLabel control={<Checkbox checked={isVisualize} onChange={(e) => setIsVisualize(e.target.checked)} />} label="Visualize" />
+                <FormControlLabel control={<Checkbox tabIndex="-1" checked={isVisualize} onChange={(e) => setIsVisualize(e.target.checked)} />} label="Visualize" />
             </Box>
         </Box>
     )

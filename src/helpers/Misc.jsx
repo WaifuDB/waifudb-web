@@ -228,18 +228,19 @@ export function sortRelationships(relationships) {
 }
 
 const loveRelated = [
-    'boyfriend', 'girlfriend', 
-    'husband', 'wife', 
-    'fiance', 'fiancee', 'fiancée', 'lover', 'partner', 'spouse', 'significant other', 'sweetheart', 'darling', 'beloved', 'soulmate'];
+    'boyfriend', 'girlfriend',
+    'husband', 'wife', 'affair', 
+    'fiance', 'fiancee', 'fiancée', 'lover', 'partner', 'spouse', 'significant other', 'sweetheart', 'darling', 'beloved', 'soulmate', 'mate'];
 const potentialLoveRelated = [
-    'harem candidate', 'haremcandidate', 
+    'harem candidate', 'haremcandidate', 'potential lover',
     'love interest', 'loveinterest', 'crush'];
 const familyRelated = [
-    'relative', 'mother', 'father', 'brother', 'sister', 
-    'uncle', 'aunt', 'grandmother', 'grandfather', 'granddaughter', 'grandson', 
-    'cousin', 'daughter', 'son', 
-    'creator', 'creation', 
-    'ward', 'guardian', 
+    'relative', 'mother', 'father', 'brother', 'sister', 'twin brother', 'twin sister',
+    'uncle', 'aunt', 'grandmother', 'grandfather', 'granddaughter', 'grandson',
+    'cousin', 'daughter', 'son',
+    'relative', //for unknown relations
+    'creator', 'creation',
+    'ward', 'guardian',
     'ancestor', 'descendant'];
 const propertyRelated = ['rapist', 'victim', 'master', 'slave', 'owner', 'pet', 'maid', 'servant', 'mistress', 'butler'];
 const other = ['friend', 'enemy', 'rival', 'acquaintance', 'colleague', 'classmate', 'partner'];
@@ -263,7 +264,7 @@ export function getRelationshipType(relationshipLabel) {
     //remove prefixes like 'step-', 'step ', 'foster-', 'foster ' (not similar to 'ex-')
     // relationship = relationship.replace(/^(step|foster|step |foster )/i, '');
     let is_step = false;
-    const prefixes = ['step', 'foster', 'half', 'adoptive', 'in-law', 'in law', 'acting'];
+    const prefixes = ['step', 'foster', 'half', 'adoptive', 'in-law', 'in law', 'acting', 'god'];
     // const suffixes = ['in-law', 'in law'];
     for (const prefix of prefixes) {
         if (relationship.startsWith(prefix + '') || relationship.endsWith(prefix)) {
@@ -378,7 +379,7 @@ const remappableRelationships = [
     { a: "boyfriend", b: "girlfriend", label: "partner" },
     { a: "ex-boyfriend", b: "ex-girlfriend", label: "ex-partner" },
     { a: "ex-husband", b: "ex-wife", label: "divorced" },
-    { a: "fiancée", b: "fiancée", label: "engaged" },
+    { a: "fiancé", b: "fiancée", label: "engaged" },
 ]
 
 //these indicate no real ties other than emotional ones or connections with unknown ties in between (distance relatives for example)
@@ -407,7 +408,8 @@ const dashableRelationships = [
 const removableOpposites = [
     //for example; if maid, remove the opposite 'master' label
     'maid', 'servant', 'slave', 'pet', 'butler',
-    '{any}father', '{any}mother', 'creator', 'guardian', 'clone'
+    '{any}father', '{any}mother', 'creator', 'guardian', 'clone',
+    'lady-in-waiting', 'rapist'
 ]
 
 export function reprocessRelationshipsForChart(relationships) {
@@ -504,7 +506,7 @@ export function tabProps(index) {
     };
 }
 
-export function TabPanel(props){
+export function TabPanel(props) {
     const { children, value, index, ...other } = props;
 
     return (

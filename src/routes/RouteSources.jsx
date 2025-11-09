@@ -93,6 +93,10 @@ const SOURCE_TABS = {
     [1]: {
         label: "Gallery",
         url_key: "gallery",
+    },
+    [2]: {
+        label: "Relationships",
+        url_key: "relationships",
     }
 }
 function RouteSourcesObject() {
@@ -116,6 +120,10 @@ function RouteSourcesObject() {
             if (!sourcesData) {
                 throw new Error('No data found for the sources');
             }
+
+            //order characters by amount of relationships
+            sourcesData.characters.sort((a, b) => b.relationships.length - a.relationships.length);
+
             setData(sourcesData);
 
             //reprocess relationship data (for chart)
@@ -142,6 +150,7 @@ function RouteSourcesObject() {
                         id: character.id,
                         gender: character.gender,
                         name: character.name,
+                        age: character.age,
                         image_url: character.remote_image_id ? `https://cdn.kirino.sh/i/${character.remote_image_id}.png` : "https://placehold.co/400",
                         image: image,
                         // relationship_count: character.relationships.length,
@@ -324,176 +333,178 @@ function RouteSourcesObject() {
                             ))
                         }
                     </Grid>
-                    <Box ref={containerRef} sx={{
-                        maxWidth: '100%',
-                    }}>
-                        <Typography variant="h6" component="h2" gutterBottom>Relationships ({relationshipData?.relationships?.length || 0})</Typography>
-                        {
-                            width ? <>
-                                <ForceGraph2D
-                                    ref={fgRef}
-                                    width={width}
-                                    graphData={{
-                                        // nodes: relationshipData?.characters || [],
-                                        //filter out where nodes[x].relationship_count === 0
-                                        nodes: relationshipData?.characters?.filter(node => node.relationship_count > 0) || [],
-                                        //Duplicate links for both directions
-                                        // links: relationshipData?.relationships || [],
-                                        //filter out where links[x].visualize === false
-                                        links: relationshipData?.relationships?.filter(link => link.visualize !== false) || [],
-                                    }}
-                                    nodeLabel="name"
-                                    nodeAutoColorBy="group"
-                                    nodeCanvasObject={(node, ctx, globalScale) => {
-                                        //use globalScale, but reduce the scaling
-                                        //1 = 1
-                                        //0.5 = 0.75
-                                        //...
-                                        //2 = 1.5
-                                        //...
-                                        let adjustedGlobalScale = (globalScale * 2) / globalScale;
-                                        const size = (node.size || 16) / adjustedGlobalScale * 2;
-
-                                        // const size = 28;
-                                        // ctx.drawImage(node.image, node.x - size / 2, node.y - size / 2, size, size);
-
-                                        let maxRes = { width: size, height: size };
-                                        let curRes = { width: node.image.width, height: node.image.height };
-
-                                        //emulate the "object-fit: cover" property (so the image fills the desired maxWidth and maxHeight (it can be bigger, but the smallest side will equal the maxWidth or maxHeight))
-                                        //scale up if either side is smaller than the maxWidth or maxHeight
-                                        let fittedRes = fit(maxRes, curRes, 'cover');
-
-                                        let posX = node.x - fittedRes.width / 2;
-                                        // let posY = node.y - height / 2;
-                                        //align with top of the image instead of center (most images are taller and are portraits, we want to capture the face)
-                                        let posY = node.y - size / 2;
-
-                                        let textPosX = node.x;
-                                        let textPosY = node.y + size / 2;
-
-                                        // ctx.drawImage(node.image, posX, posY, width, height);
-
-                                        //mask the image to a circle
-                                        ctx.save();
-                                        ctx.beginPath();
-                                        ctx.arc(node.x, node.y, size / 2, 0, Math.PI * 2, true);
-                                        ctx.closePath();
-                                        ctx.clip();
-                                        //draw light gray behind it
-                                        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-                                        ctx.fillRect(node.x - size / 2, node.y - size / 2, size, size);
-                                        //draw the image
-                                        ctx.drawImage(node.image, posX, posY, fittedRes.width, fittedRes.height);
-                                        ctx.restore();
-
-                                        //dont draw if zoomed out too much
-                                        if (globalScale < 0.5) return;
-
-                                        const fontSize = (node.size || 16) / adjustedGlobalScale * 0.5;
-                                        ctx.font = `${fontSize}px Sans-Serif`;
-
-                                        const label = `${getGenderLabel(node.gender).symbol}${node.name}`;
-
-                                        ctx.fillStyle = 'white';
-                                        ctx.shadowColor = 'black';
-                                        ctx.shadowBlur = 2 / adjustedGlobalScale;
-                                        ctx.lineWidth = 1 / adjustedGlobalScale;
-                                        ctx.strokeText(label, textPosX, textPosY + 10);
-                                        ctx.shadowColor = 0;
-
-                                        ctx.textAlign = 'center';
-                                        ctx.textBaseline = 'middle';
-                                        ctx.fillText(label, textPosX, textPosY + 10);
-                                        ctx.restore();
-                                    }}
-                                    onNodeClick={(node) => {
-                                        navigate(`/characters/${node.id}`);
-                                    }}
-                                    linkColor={(link) => link.color || 'white'}
-                                    linkWidth={1}
-                                    linkCurvature="curvature"
-                                    // linkDirectionalArrowLength={6}
-                                    zoomToFit={true}
-                                    //nodeVal is used to set the size of the node, adjust to globalScale
-                                    nodeVal={(node) => {
-                                        //get globalScale
-                                        const globalScale = fgRef.current?.zoom() || 1;
-                                        let adjustedGlobalScale = (globalScale * 2) / globalScale;
-                                        const size = (node.size || 16) / adjustedGlobalScale * 2;
-                                        return size;
-                                    }}
-                                    onNodeDragEnd={(node) => {
-                                        node.fx = node.x;
-                                        node.fy = node.y;
-                                    }}
-                                    //small arrow at the end of the link
-                                    //no arrow if the link has "same_labels" property set to true
-                                    linkDirectionalArrowLength={link => link.same_labels ? 0 : 6}
-                                    linkDirectionalArrowRelPos={1}
-                                    linkDirectionalArrowColor={'color'}
-                                    linkCanvasObjectMode={() => 'after'}
-                                    linkCanvasObject={(link, ctx, globalScale) => {
-                                        const MAX_FONT_SIZE = 12 / globalScale;
-                                        const LABEL_NODE_MARGIN = 8 / globalScale;
-
-                                        const start = link.source;
-                                        const end = link.target;
-
-                                        if (typeof start !== 'object' || typeof end !== 'object') return;
-
-                                        const { source, target } = link;
-                                        const curvature = +link.curvature || 0.5; // default curvature
-                                        const cpX = (source.x + target.x) / 2 + (target.y - source.y) * curvature;
-                                        const cpY = (source.y + target.y) / 2 + (source.x - target.x) * curvature;
-
-                                        const getPoint = t => {
-                                            const x = Math.pow(1 - t, 2) * source.x + 2 * (1 - t) * t * cpX + Math.pow(t, 2) * target.x;
-                                            const y = Math.pow(1 - t, 2) * source.y + 2 * (1 - t) * t * cpY + Math.pow(t, 2) * target.y;
-                                            return { x, y };
-                                        };
-
-                                        // Get midpoint (t = 0.5)
-                                        const textPos = getPoint(0.5);
-
-                                        const relLink = { x: end.x - start.x, y: end.y - start.y };
-
-                                        const maxTextLength = Math.sqrt(Math.pow(relLink.x, 2) + Math.pow(relLink.y, 2)) - LABEL_NODE_MARGIN * 2;
-
-                                        let textAngle = Math.atan2(relLink.y, relLink.x);
-                                        // maintain label vertical orientation for legibility
-                                        if (textAngle > Math.PI / 2) textAngle = -(Math.PI - textAngle);
-                                        if (textAngle < -Math.PI / 2) textAngle = -(-Math.PI - textAngle);
-
-                                        // const label = `${link.labels.forward}`;
-                                        let label = `${link.label}`;
-
-                                        ctx.font = '1px Sans-Serif';
-                                        const fontSize = Math.min(MAX_FONT_SIZE, maxTextLength / ctx.measureText(label).width);
-                                        ctx.font = `${fontSize}px Sans-Serif`;
-
-                                        ctx.save();
-                                        ctx.translate(textPos.x, textPos.y);
-                                        ctx.rotate(textAngle);
-
-                                        ctx.textAlign = 'center';
-                                        ctx.textBaseline = 'middle';
-                                        // ctx.fillStyle = 'white';
-                                        //use line color
-                                        ctx.fillStyle = link.color || 'white';
-                                        ctx.fillText(label, 0, 0);
-                                        ctx.restore();
-                                    }}
-                                    linkLineDash={link => link.dashed ? [4, 2] : undefined}
-                                />
-                            </> :
-                                <Typography variant="body1" component="p">No relationships found</Typography>
-                        }
-                    </Box>
                 </Box>
             </TabPanel>
             <TabPanel value={activeTab} index={1}>
                 <ImageGallery image_data={data.images} />
+            </TabPanel>
+            <TabPanel value={activeTab} index={2}>
+                <Box ref={containerRef} sx={{
+                    maxWidth: '100%',
+                }}>
+                    <Typography variant="h6" component="h2" gutterBottom>Relationships ({relationshipData?.relationships?.length || 0})</Typography>
+                    {
+                        width ? <>
+                            <ForceGraph2D
+                                ref={fgRef}
+                                width={width}
+                                graphData={{
+                                    // nodes: relationshipData?.characters || [],
+                                    //filter out where nodes[x].relationship_count === 0
+                                    nodes: relationshipData?.characters?.filter(node => node.relationship_count > 0) || [],
+                                    //Duplicate links for both directions
+                                    // links: relationshipData?.relationships || [],
+                                    //filter out where links[x].visualize === false
+                                    links: relationshipData?.relationships?.filter(link => link.visualize !== false) || [],
+                                }}
+                                nodeLabel="name"
+                                nodeAutoColorBy="group"
+                                nodeCanvasObject={(node, ctx, globalScale) => {
+                                    //use globalScale, but reduce the scaling
+                                    //1 = 1
+                                    //0.5 = 0.75
+                                    //...
+                                    //2 = 1.5
+                                    //...
+                                    let adjustedGlobalScale = (globalScale * 2) / globalScale;
+                                    const size = (node.size || 16) / adjustedGlobalScale * 2;
+
+                                    // const size = 28;
+                                    // ctx.drawImage(node.image, node.x - size / 2, node.y - size / 2, size, size);
+
+                                    let maxRes = { width: size, height: size };
+                                    let curRes = { width: node.image.width, height: node.image.height };
+
+                                    //emulate the "object-fit: cover" property (so the image fills the desired maxWidth and maxHeight (it can be bigger, but the smallest side will equal the maxWidth or maxHeight))
+                                    //scale up if either side is smaller than the maxWidth or maxHeight
+                                    let fittedRes = fit(maxRes, curRes, 'cover');
+
+                                    let posX = node.x - fittedRes.width / 2;
+                                    // let posY = node.y - height / 2;
+                                    //align with top of the image instead of center (most images are taller and are portraits, we want to capture the face)
+                                    let posY = node.y - size / 2;
+
+                                    let textPosX = node.x;
+                                    let textPosY = node.y + size / 2;
+
+                                    // ctx.drawImage(node.image, posX, posY, width, height);
+
+                                    //mask the image to a circle
+                                    ctx.save();
+                                    ctx.beginPath();
+                                    ctx.arc(node.x, node.y, size / 2, 0, Math.PI * 2, true);
+                                    ctx.closePath();
+                                    ctx.clip();
+                                    //draw light gray behind it
+                                    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                                    ctx.fillRect(node.x - size / 2, node.y - size / 2, size, size);
+                                    //draw the image
+                                    ctx.drawImage(node.image, posX, posY, fittedRes.width, fittedRes.height);
+                                    ctx.restore();
+
+                                    //dont draw if zoomed out too much
+                                    if (globalScale < 0.5) return;
+
+                                    const fontSize = (node.size || 16) / adjustedGlobalScale * 0.5;
+                                    ctx.font = `${fontSize}px Sans-Serif`;
+
+                                    const label = `${getGenderLabel(node.gender).symbol}${node.name}${node.age ? ` (${node.age})` : ''}`;
+
+                                    ctx.fillStyle = 'white';
+                                    ctx.shadowColor = 'black';
+                                    ctx.shadowBlur = 2 / adjustedGlobalScale;
+                                    ctx.lineWidth = 1 / adjustedGlobalScale;
+                                    ctx.strokeText(label, textPosX, textPosY + 10);
+                                    ctx.shadowColor = 0;
+
+                                    ctx.textAlign = 'center';
+                                    ctx.textBaseline = 'middle';
+                                    ctx.fillText(label, textPosX, textPosY + 10);
+                                    ctx.restore();
+                                }}
+                                onNodeClick={(node) => {
+                                    navigate(`/characters/${node.id}`);
+                                }}
+                                linkColor={(link) => link.color || 'white'}
+                                linkWidth={1}
+                                linkCurvature="curvature"
+                                // linkDirectionalArrowLength={6}
+                                zoomToFit={true}
+                                //nodeVal is used to set the size of the node, adjust to globalScale
+                                nodeVal={(node) => {
+                                    //get globalScale
+                                    const globalScale = fgRef.current?.zoom() || 1;
+                                    let adjustedGlobalScale = (globalScale * 2) / globalScale;
+                                    const size = (node.size || 16) / adjustedGlobalScale * 2;
+                                    return size;
+                                }}
+                                onNodeDragEnd={(node) => {
+                                    node.fx = node.x;
+                                    node.fy = node.y;
+                                }}
+                                //small arrow at the end of the link
+                                //no arrow if the link has "same_labels" property set to true
+                                linkDirectionalArrowLength={link => link.same_labels ? 0 : 6}
+                                linkDirectionalArrowRelPos={1}
+                                linkDirectionalArrowColor={'color'}
+                                linkCanvasObjectMode={() => 'after'}
+                                linkCanvasObject={(link, ctx, globalScale) => {
+                                    const MAX_FONT_SIZE = 12 / globalScale;
+                                    const LABEL_NODE_MARGIN = 8 / globalScale;
+
+                                    const start = link.source;
+                                    const end = link.target;
+
+                                    if (typeof start !== 'object' || typeof end !== 'object') return;
+
+                                    const { source, target } = link;
+                                    const curvature = +link.curvature || 0.5; // default curvature
+                                    const cpX = (source.x + target.x) / 2 + (target.y - source.y) * curvature;
+                                    const cpY = (source.y + target.y) / 2 + (source.x - target.x) * curvature;
+
+                                    const getPoint = t => {
+                                        const x = Math.pow(1 - t, 2) * source.x + 2 * (1 - t) * t * cpX + Math.pow(t, 2) * target.x;
+                                        const y = Math.pow(1 - t, 2) * source.y + 2 * (1 - t) * t * cpY + Math.pow(t, 2) * target.y;
+                                        return { x, y };
+                                    };
+
+                                    // Get midpoint (t = 0.5)
+                                    const textPos = getPoint(0.5);
+
+                                    const relLink = { x: end.x - start.x, y: end.y - start.y };
+
+                                    const maxTextLength = Math.sqrt(Math.pow(relLink.x, 2) + Math.pow(relLink.y, 2)) - LABEL_NODE_MARGIN * 2;
+
+                                    let textAngle = Math.atan2(relLink.y, relLink.x);
+                                    // maintain label vertical orientation for legibility
+                                    if (textAngle > Math.PI / 2) textAngle = -(Math.PI - textAngle);
+                                    if (textAngle < -Math.PI / 2) textAngle = -(-Math.PI - textAngle);
+
+                                    // const label = `${link.labels.forward}`;
+                                    let label = `${link.label}`;
+
+                                    ctx.font = '1px Sans-Serif';
+                                    const fontSize = Math.min(MAX_FONT_SIZE, maxTextLength / ctx.measureText(label).width);
+                                    ctx.font = `${fontSize}px Sans-Serif`;
+
+                                    ctx.save();
+                                    ctx.translate(textPos.x, textPos.y);
+                                    ctx.rotate(textAngle);
+
+                                    ctx.textAlign = 'center';
+                                    ctx.textBaseline = 'middle';
+                                    // ctx.fillStyle = 'white';
+                                    //use line color
+                                    ctx.fillStyle = link.color || 'white';
+                                    ctx.fillText(label, 0, 0);
+                                    ctx.restore();
+                                }}
+                                linkLineDash={link => link.dashed ? [4, 2] : undefined}
+                            />
+                        </> :
+                            <Typography variant="body1" component="p">No relationships found</Typography>
+                    }
+                </Box>
             </TabPanel>
         </>
     );
