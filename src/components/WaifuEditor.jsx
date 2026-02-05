@@ -147,6 +147,11 @@ function WaifuEditor(props) {
             match = pastedData.match(/(\d+)\/(\d+)\/(\d+)/);
         }
 
+        if (!match) {
+            //try B:xx, W:xx, H:xx (xx are numbers, can be any length)
+            match = pastedData.match(/B:(\d+),\s*W:(\d+),\s*H:(\d+)/);
+        }
+
         let [bust, waist, hips] = [];
         if (match) {
             bust = match[1];

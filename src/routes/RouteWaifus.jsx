@@ -202,7 +202,7 @@ function RouteWaifus() {
                                                 <Button size="small" fullWidth color="primary" component={Link} to={`/characters/${data.id}/edit`} variant="contained">
                                                     Edit
                                                 </Button>
-                                                <Button size="small" fullWidth color="primary" component={Link} to={`/images/new`} variant="outlined">
+                                                <Button size="small" fullWidth color="primary" component={Link} to={`/images/new?character_id=${data.id}`} variant="outlined">
                                                     Add Image
                                                 </Button>
                                             </Box>

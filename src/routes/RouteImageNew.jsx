@@ -6,6 +6,8 @@ import ImageEditor from "../components/ImageEditor";
 
 function RouteImageNew() {
     const { user, token } = useAuth();
+    const urlParams = new URLSearchParams(window.location.search);
+    const characterId = urlParams.get('character_id');
 
     const onSubmit = async (data) => {
         try{
@@ -40,7 +42,7 @@ function RouteImageNew() {
     return (
         <>
             <h1>Add Image</h1>
-            <ImageEditor onSubmit={onSubmit} />
+            <ImageEditor onSubmit={onSubmit} prefill={[characterId]} />
             {/* <WaifuEditor prefill={data} onSubmit={onSubmit} /> */}
         </>
     )

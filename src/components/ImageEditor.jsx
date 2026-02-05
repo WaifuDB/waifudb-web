@@ -91,6 +91,7 @@ function ImageEditor(props) {
                     <MultipleSelectWithSearch
                         options={characterDatabase}
                         onUpdate={handleSelectionUpdate}
+                        prefill={inputCharacterArray}
                     />
                     <Box>
                         <FileUploadBox onChange={(file) => setInputImageFile(file)} />

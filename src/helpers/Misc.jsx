@@ -232,17 +232,18 @@ const loveRelated = [
     'husband', 'wife', 'affair', 
     'fiance', 'fiancee', 'fiancée', 'lover', 'partner', 'spouse', 'significant other', 'sweetheart', 'darling', 'beloved', 'soulmate', 'mate'];
 const potentialLoveRelated = [
-    'harem candidate', 'haremcandidate', 'potential lover',
+    'harem candidate', 'fiancé candidate', 'fiancée candidate', 'haremcandidate', 'potential lover', 'potential crush', 'suitor', 
     'love interest', 'loveinterest', 'crush'];
 const familyRelated = [
     'relative', 'mother', 'father', 'brother', 'sister', 'twin brother', 'twin sister',
     'uncle', 'aunt', 'grandmother', 'grandfather', 'granddaughter', 'grandson',
     'cousin', 'daughter', 'son',
     'relative', //for unknown relations
+    'counterpart', //like in to love-ru, run and ren are two people in one body, alternating control, mentally they are different people
     'creator', 'creation',
     'ward', 'guardian',
     'ancestor', 'descendant'];
-const propertyRelated = ['rapist', 'victim', 'master', 'slave', 'owner', 'pet', 'maid', 'servant', 'mistress', 'butler'];
+const propertyRelated = ['rapist', 'victim', 'master', 'slave', 'owner', 'pet', 'maid', 'servant', 'mistress', 'butler', 'bully', 'lust'];
 const other = ['friend', 'enemy', 'rival', 'acquaintance', 'colleague', 'classmate', 'partner'];
 
 export function getRelationshipType(relationshipLabel) {
@@ -409,7 +410,7 @@ const removableOpposites = [
     //for example; if maid, remove the opposite 'master' label
     'maid', 'servant', 'slave', 'pet', 'butler',
     '{any}father', '{any}mother', 'creator', 'guardian', 'clone',
-    'lady-in-waiting', 'rapist'
+    'lady-in-waiting', 'rapist', 'bully', 'fiancé candidate'
 ]
 
 export function reprocessRelationshipsForChart(relationships) {
