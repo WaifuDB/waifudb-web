@@ -37,8 +37,6 @@ const familyRelated = [
   'father',
   'brother',
   'sister',
-  'twin brother',
-  'twin sister',
   'uncle',
   'aunt',
   'grandmother',
@@ -61,36 +59,105 @@ const familyRelated = [
 const propertyRelated = ['rapist', 'victim', 'master', 'slave', 'owner', 'pet', 'maid', 'servant', 'mistress', 'butler', 'bully', 'lust'];
 const other = ['friend', 'enemy', 'rival', 'acquaintance', 'colleague', 'classmate', 'partner'];
 
+const LOVE_RELATED_SET = new Set(loveRelated);
+const POTENTIAL_LOVE_RELATED_SET = new Set(potentialLoveRelated);
+const FAMILY_RELATED_SET = new Set(familyRelated);
+const PROPERTY_RELATED_SET = new Set(propertyRelated);
+const OTHER_RELATED_SET = new Set(other);
+
+const PREFIXES = ['step', 'foster', 'half', 'adoptive', 'in-law', 'in law', 'acting', 'god'];
+const EX_PREFIXES = ['ex-', 'ex ', 'former '];
+
+const RELATIONSHIP_ORDER = [
+  ['mother', 'father', 'step-mother', 'step-father', 'ancestor', 'descendant', 'guardian', 'creator', 'creation'],
+  ['uncle', 'aunt'],
+  ['brother', 'sister', 'twin brother', 'twin sister', 'step-brother', 'step-sister'],
+  ['husband', 'wife'],
+  ['boyfriend', 'girlfriend'],
+  ['{any}-cousin'],
+];
+
+function findRelationshipOrder(relationship) {
+  return RELATIONSHIP_ORDER.findIndex((group) => {
+    return group.some((orderedRelationship) => {
+      if (orderedRelationship === relationship) {
+        return true;
+      }
+
+      if (orderedRelationship.includes('{any}')) {
+        const wildcardPattern = new RegExp(`^${orderedRelationship.replace('{any}', '.*')}$`, 'i');
+        return wildcardPattern.test(relationship);
+      }
+
+      return false;
+    });
+  });
+}
+
+function normalizeRelationshipLabel(label) {
+  let relationship = label.toLowerCase().trim();
+  let isStep = false;
+  let isTwin = false;
+
+  if (relationship.startsWith('twin ') || relationship.startsWith('twin-')) {
+    relationship = relationship.replace(/^twin[- ]/i, '');
+    isTwin = true;
+  }
+
+  for (const prefix of PREFIXES) {
+    const startsWithPrefix = relationship.startsWith(`${prefix} `) || relationship.startsWith(`${prefix}-`);
+    const endsWithPrefix = relationship.endsWith(` ${prefix}`) || relationship.endsWith(`-${prefix}`);
+
+    if (startsWithPrefix || endsWithPrefix) {
+      relationship = relationship.replace(new RegExp(`^(${prefix}-|${prefix} )`, 'i'), '');
+      isStep = true;
+    }
+  }
+
+  return { relationship, isStep, isTwin };
+}
+
+function isExRelationship(relationship) {
+  return EX_PREFIXES.some((prefix) => relationship.startsWith(prefix)) || relationship === 'divored' || relationship === 'divorced';
+}
+
+function matchesRemappableRelationship(rel, remappable) {
+  const isForwardMatch = rel.labels.forward === remappable.a && rel.labels.reverse === remappable.b;
+  const isReverseMatch = rel.labels.forward === remappable.b && rel.labels.reverse === remappable.a;
+  return isForwardMatch || isReverseMatch;
+}
+
+function createEdgeRelationship(rel, source, target, label) {
+  return {
+    source,
+    target,
+    label,
+    color: rel.color,
+    type: rel.type,
+    curvature: rel.curvature,
+    same_labels: rel.same_labels,
+    distance: rel.distance,
+    visualize: rel.visualize === 1,
+  };
+}
+
 export function sortRelationships(relationships) {
   if (!Array.isArray(relationships) || relationships.length === 0) {
     return relationships;
   }
 
-  const relationshipOrder = {
-    1: ['mother', 'father', 'step-mother', 'step-father', 'ancestor', 'descendant', 'guardian', 'creator', 'creation'],
-    2: ['uncle', 'aunt'],
-    3: ['brother', 'sister', 'step-brother', 'step-sister'],
-    4: ['husband', 'wife'],
-    5: ['boyfriend', 'girlfriend'],
-    6: ['{any}-cousin'],
-  };
-
   const sortedRelationships = [];
   const unsortedRelationships = [];
 
-  const relationshipKeys = Object.keys(relationshipOrder);
   for (const relationship of relationships) {
-    let found = false;
-    for (const key of relationshipKeys) {
-      if (relationshipOrder[key].includes(relationship)) {
-        sortedRelationships.push({ relationship, order: key });
-        found = true;
-        break;
-      }
-    }
-    if (!found) {
+    const order = findRelationshipOrder(relationship);
+
+    if (order === -1) {
       unsortedRelationships.push(relationship);
+      continue;
     }
+
+    sortedRelationships.push({ relationship, order });
   }
 
   sortedRelationships.sort((a, b) => {
@@ -104,46 +171,46 @@ export function sortRelationships(relationships) {
 }
 
 export function getRelationshipType(relationshipLabel) {
-  if (!relationshipLabel) return '#FFFFFF';
+  if (!relationshipLabel) {
+    return {
+      color: '#FFFFFF',
+      type: 'unknown',
+    };
+  }
 
   let color = '#FFFFFF';
   let type = 'unknown';
 
-  let relationship = relationshipLabel.toLowerCase().trim();
-  let is_step = false;
-  const prefixes = ['step', 'foster', 'half', 'adoptive', 'in-law', 'in law', 'acting', 'god'];
+  const { relationship, isStep, isTwin } = normalizeRelationshipLabel(relationshipLabel);
 
-  for (const prefix of prefixes) {
-    if (relationship.startsWith(prefix + '') || relationship.endsWith(prefix)) {
-      relationship = relationship.replace(new RegExp(`^(${prefix}-|${prefix} )`, 'i'), '');
-      is_step = true;
-    }
-  }
-
-  if (loveRelated.includes(relationship)) {
+  if (LOVE_RELATED_SET.has(relationship)) {
     color = '#FF69B4';
     type = 'love';
-  } else if (potentialLoveRelated.includes(relationship)) {
+  } else if (POTENTIAL_LOVE_RELATED_SET.has(relationship)) {
     color = '#FFB6C1';
     type = 'potential love';
-  } else if (familyRelated.includes(relationship)) {
+  } else if (FAMILY_RELATED_SET.has(relationship)) {
     color = '#ADD8E6';
     type = 'family';
-  } else if (propertyRelated.includes(relationship)) {
+  } else if (PROPERTY_RELATED_SET.has(relationship)) {
     color = '#8B0000';
     type = 'property';
-  } else if (other.includes(relationship)) {
+  } else if (OTHER_RELATED_SET.has(relationship)) {
     color = '#D3D3D3';
     type = 'other';
   }
 
-  if (relationship.startsWith('ex-') || relationship.startsWith('ex ') || relationship.startsWith('former ') || relationship === 'divored') {
+  if (isExRelationship(relationship)) {
     color = '#A9A9A9';
     type = 'ex-relationship';
   }
 
-  if (is_step) {
+  if (isStep) {
     color += 'aa';
+  }
+
+  if (isTwin) {
+    type = 'twin ' + type;
   }
 
   return {
@@ -206,12 +273,15 @@ const removableOpposites = [
   'fiancé candidate',
 ];
 
+const DASHABLE_FRAGMENTS = new Set(dashableRelationships.map((relationship) => relationship.replace('{relationship}', '').toLowerCase()));
+const REMOVABLE_OPPOSITE_FRAGMENTS = new Set(removableOpposites.map((relationship) => relationship.replace('{any}', '').toLowerCase()));
+
 export function reprocessRelationshipsForChart(relationships) {
   let processed = [...relationships];
 
   remappableRelationships.forEach((relationship) => {
     processed.forEach((rel) => {
-      if ((rel.labels.forward === relationship.a && rel.labels.reverse === relationship.b) || (rel.labels.forward === relationship.b && rel.labels.reverse === relationship.a)) {
+      if (matchesRemappableRelationship(rel, relationship)) {
         rel.labels.forward = relationship.label;
         rel.labels.reverse = relationship.label;
         rel.same_labels = true;
@@ -229,11 +299,11 @@ export function reprocessRelationshipsForChart(relationships) {
   );
 
   processed = processed.map((relationship) => {
-    removableOpposites.forEach((removable) => {
-      if (relationship.labels.forward?.toLowerCase().includes(removable.replace('{any}', '').toLowerCase())) {
+    REMOVABLE_OPPOSITE_FRAGMENTS.forEach((removable) => {
+      if (relationship.labels.forward?.toLowerCase().includes(removable)) {
         relationship.labels.reverse = '';
       }
-      if (relationship.labels.reverse?.toLowerCase().includes(removable.replace('{any}', '').toLowerCase())) {
+      if (relationship.labels.reverse?.toLowerCase().includes(removable)) {
         relationship.labels.forward = '';
       }
     });
@@ -241,43 +311,20 @@ export function reprocessRelationshipsForChart(relationships) {
   });
 
   processed = processed.flatMap((rel) => [
-    {
-      source: rel.from,
-      target: rel.to,
-      label: rel.labels.forward,
-      color: rel.color,
-      type: rel.type,
-      curvature: rel.curvature,
-      same_labels: rel.same_labels,
-      distance: rel.distance,
-      visualize: rel.visualize === 1 ? true : false,
-    },
+    createEdgeRelationship(rel, rel.from, rel.to, rel.labels.forward),
     ...(rel.same_labels
       ? []
       : [
-          {
-            source: rel.to,
-            target: rel.from,
-            label: rel.labels.reverse,
-            color: rel.color,
-            type: rel.type,
-            curvature: rel.curvature,
-            same_labels: rel.same_labels,
-            distance: rel.distance,
-            visualize: rel.visualize === 1 ? true : false,
-          },
+          createEdgeRelationship(rel, rel.to, rel.from, rel.labels.reverse),
         ]),
   ]);
 
   processed = processed.filter((relationship) => relationship.label && relationship.label.trim() !== '');
 
   processed = processed.map((relationship) => {
-    let isDashed = false;
-    dashableRelationships.forEach((dashable) => {
-      if (relationship.label.toLowerCase().includes(dashable.replace('{relationship}', '').toLowerCase())) {
-        isDashed = true;
-      }
-    });
+    const labelLower = relationship.label.toLowerCase();
+    const isDashed = [...DASHABLE_FRAGMENTS].some((dashable) => labelLower.includes(dashable));
+
     return { ...relationship, dashed: isDashed };
   });
 
