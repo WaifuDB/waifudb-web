@@ -56,12 +56,14 @@ const familyRelated = [
   'descendant',
 ];
 
-const propertyRelated = ['rapist', 'victim', 'master', 'slave', 'owner', 'pet', 'maid', 'servant', 'mistress', 'butler', 'bully', 'lust'];
+const occupationalRelated = ['master', 'maid', 'servant', 'mistress', 'butler', 'teacher', 'student'];
+const propertyRelated = ['rapist', 'victim', 'slave', 'owner', 'pet', 'bully', 'lust'];
 const other = ['friend', 'enemy', 'rival', 'acquaintance', 'colleague', 'classmate', 'partner'];
 
 const LOVE_RELATED_SET = new Set(loveRelated);
 const POTENTIAL_LOVE_RELATED_SET = new Set(potentialLoveRelated);
 const FAMILY_RELATED_SET = new Set(familyRelated);
+const OCCUPATIONAL_RELATED_SET = new Set(occupationalRelated);
 const PROPERTY_RELATED_SET = new Set(propertyRelated);
 const OTHER_RELATED_SET = new Set(other);
 
@@ -192,6 +194,9 @@ export function getRelationshipType(relationshipLabel) {
   } else if (FAMILY_RELATED_SET.has(relationship)) {
     color = '#ADD8E6';
     type = 'family';
+  } else if (OCCUPATIONAL_RELATED_SET.has(relationship)) {
+    color = '#FFD580';
+    type = 'occupational';
   } else if (PROPERTY_RELATED_SET.has(relationship)) {
     color = '#8B0000';
     type = 'property';
