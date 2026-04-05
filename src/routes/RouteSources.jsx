@@ -2,11 +2,10 @@ import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { getAPIUrl } from "../helpers/API";
-import { Box, Card, CardActionArea, CardContent, CardMedia, Grid, ImageList, ImageListItem, Stack, Tab, Tabs, Typography } from "@mui/material";
+import { Box, Card, CardActionArea, CardContent, CardMedia, Grid, Stack, Tab, Tabs, Typography } from "@mui/material";
 import { getGenderLabel, getRelationshipType, reprocessRelationshipsForChart, TabPanel, tabProps } from "../helpers/Misc";
 import ForceGraph2D from 'react-force-graph-2d';
 import { useResizeDetector } from "react-resize-detector";
-import { fit } from "object-fit-math";
 import ImageGallery from "../components/ImageGallery";
 
 function RouteSources() {
@@ -85,6 +84,11 @@ function RouteSourcesList() {
 
 const MIN_NODE_SIZE = 16;
 const MAX_NODE_SIZE = 32;
+const NODE_LABEL_ZOOM_THRESHOLD = 0.75;
+const LINK_LABEL_ZOOM_THRESHOLD = 1.1;
+const MIN_LINK_FONT_SIZE = 3;
+const PLACEHOLDER_IMAGE_URL = "https://placehold.co/400";
+const DASHED_LINK_PATTERN = [4, 2];
 const SOURCE_TABS = {
     [0]: {
         label: "Characters",
@@ -98,7 +102,54 @@ const SOURCE_TABS = {
         label: "Relationships",
         url_key: "relationships",
     }
+};
+
+const GRAPH_LABEL_MEASURE_CONTEXT = typeof document !== 'undefined'
+    ? document.createElement('canvas').getContext('2d')
+    : null;
+
+function getCharacterImageUrl(remoteImageId) {
+    return remoteImageId
+        ? `https://cdn.kirino.sh/i/${remoteImageId}.png`
+        : PLACEHOLDER_IMAGE_URL;
 }
+
+function measureLabelWidth(label) {
+    if (!GRAPH_LABEL_MEASURE_CONTEXT || !label) {
+        return 1;
+    }
+
+    GRAPH_LABEL_MEASURE_CONTEXT.font = '1px Sans-Serif';
+    return GRAPH_LABEL_MEASURE_CONTEXT.measureText(label).width || 1;
+}
+
+function getImageCrop(image) {
+    const width = image?.naturalWidth || image?.width || 0;
+    const height = image?.naturalHeight || image?.height || 0;
+
+    if (!width || !height) {
+        return null;
+    }
+
+    if (width > height) {
+        const sourceWidth = height;
+        return {
+            sx: (width - sourceWidth) / 2,
+            sy: 0,
+            sWidth: sourceWidth,
+            sHeight: height,
+        };
+    }
+
+    const sourceHeight = width;
+    return {
+        sx: 0,
+        sy: 0,
+        sWidth: width,
+        sHeight: sourceHeight,
+    };
+}
+
 function RouteSourcesObject() {
     const { id, tab } = useParams();
     const fgRef = useRef();
@@ -122,7 +173,7 @@ function RouteSourcesObject() {
             }
 
             //order characters by amount of relationships
-            sourcesData.characters.sort((a, b) => b.relationships.length - a.relationships.length);
+            sourcesData.characters.sort((a, b) => (b.relationships?.length || 0) - (a.relationships?.length || 0));
 
             setData(sourcesData);
 
@@ -138,23 +189,29 @@ function RouteSourcesObject() {
 
             let _relationships = [];
             if (sourcesData.characters && sourcesData.characters.length > 0) {
-                // sourcesData.characters.forEach((character) => {
-                for await (const character of sourcesData.characters) {
+                for (const character of sourcesData.characters) {
+                    const imageUrl = getCharacterImageUrl(character.remote_image_id);
                     let image = new Image();
-                    // image.src = character.image_url || "https://placehold.co/400";
-                    image.src = character.remote_image_id ? `https://cdn.kirino.sh/i/${character.remote_image_id}.png` : "https://placehold.co/400";
                     image.crossOrigin = "anonymous"; // to avoid CORS issues
+                    image.decoding = 'async';
+                    image.onload = () => {
+                        fgRef.current?.refresh();
+                    };
+                    image.onerror = () => {
+                        fgRef.current?.refresh();
+                    };
+                    image.src = imageUrl;
 
-                    // maxRelationshipCount = Math.max(maxRelationshipCount, character.relationships.length || 0);
+                    const genderLabel = getGenderLabel(character.gender);
+
                     _relData.characters.push({
                         id: character.id,
                         gender: character.gender,
                         name: character.name,
                         age: character.age,
-                        image_url: character.remote_image_id ? `https://cdn.kirino.sh/i/${character.remote_image_id}.png` : "https://placehold.co/400",
+                        displayLabel: `${genderLabel.symbol}${character.name}${character.age ? ` (${character.age})` : ''}`,
+                        image_url: imageUrl,
                         image: image,
-                        // relationship_count: character.relationships.length,
-                        // size: Math.max(MIN_NODE_SIZE, Math.min(MAX_NODE_SIZE, (MAX_NODE_SIZE - MIN_NODE_SIZE) * (character.relationships.length / maxRelationshipCount) + MIN_NODE_SIZE)),
                     });
                     if (character.relationships && character.relationships.length > 0) {
                         character.relationships.forEach((relationship) => {
@@ -174,10 +231,12 @@ function RouteSourcesObject() {
                             });
                         });
                     }
-                };
+                }
 
-
-                _relationships = reprocessRelationshipsForChart(_relationships);
+                _relationships = reprocessRelationshipsForChart(_relationships).map((relationship) => ({
+                    ...relationship,
+                    label_width: measureLabelWidth(relationship.label),
+                }));
                 let relationshipCounts = {};
                 _relationships.forEach((relationship) => {
                     if (relationship.visualize === false) return;
@@ -194,8 +253,7 @@ function RouteSourcesObject() {
                     relationshipCounts[target]++;
                 });
 
-                let maxRelationshipCount = Math.max(...Object.values(relationshipCounts));
-                console.log(relationshipCounts);
+                let maxRelationshipCount = Math.max(...Object.values(relationshipCounts), 1);
 
                 _relData.characters.forEach((character) => {
                     let relationshipCount = relationshipCounts[character.id] || 0;
@@ -220,6 +278,12 @@ function RouteSourcesObject() {
                     relationship.curvature = relationshipCurvature[key];
                 });
                 _relData.maxRelationshipCount = maxRelationshipCount;
+                _relData.graphData = {
+                    nodes: _relData.characters.filter((node) => node.relationship_count > 0),
+                    links: _relData.relationships.filter((link) => link.visualize !== false),
+                };
+            } else {
+                _relData.graphData = { nodes: [], links: [] };
             }
 
             setRelationshipData(_relData);
@@ -245,11 +309,7 @@ function RouteSourcesObject() {
             setActiveTab(0);
         }
 
-        //reload source data if the tab changes
-        if (tab !== SOURCE_TABS[activeTab].url_key) {
-            loadSource();
-        }
-    }, [tab]);
+    }, [id, navigate, tab]);
 
     const changeTab = (newValue) => {
         const newTab = SOURCE_TABS[newValue].url_key;
@@ -260,11 +320,11 @@ function RouteSourcesObject() {
         //increase distance between connected nodes
         if (fgRef.current) {
             fgRef.current.d3Force('charge')
-                .strength(-600)
-                .distanceMax(300)
-                .distanceMin(50);
+                .strength(-450)
+                .distanceMax(220)
+                .distanceMin(40);
         }
-    }, [fgRef.current]);
+    }, [relationshipData, width]);
 
     useEffect(() => {
         (async () => {
@@ -348,79 +408,56 @@ function RouteSourcesObject() {
                             <ForceGraph2D
                                 ref={fgRef}
                                 width={width}
-                                graphData={{
-                                    // nodes: relationshipData?.characters || [],
-                                    //filter out where nodes[x].relationship_count === 0
-                                    nodes: relationshipData?.characters?.filter(node => node.relationship_count > 0) || [],
-                                    //Duplicate links for both directions
-                                    // links: relationshipData?.relationships || [],
-                                    //filter out where links[x].visualize === false
-                                    links: relationshipData?.relationships?.filter(link => link.visualize !== false) || [],
-                                }}
+                                graphData={relationshipData?.graphData || { nodes: [], links: [] }}
+                                cooldownTicks={80}
+                                d3AlphaDecay={0.08}
+                                d3VelocityDecay={0.35}
                                 nodeLabel="name"
                                 nodeAutoColorBy="group"
                                 nodeCanvasObject={(node, ctx, globalScale) => {
-                                    //use globalScale, but reduce the scaling
-                                    //1 = 1
-                                    //0.5 = 0.75
-                                    //...
-                                    //2 = 1.5
-                                    //...
-                                    let adjustedGlobalScale = (globalScale * 2) / globalScale;
-                                    const size = (node.size || 16) / adjustedGlobalScale * 2;
+                                    const size = node.size || MIN_NODE_SIZE;
+                                    const positionX = node.x - size / 2;
+                                    const positionY = node.y - size / 2;
 
-                                    // const size = 28;
-                                    // ctx.drawImage(node.image, node.x - size / 2, node.y - size / 2, size, size);
-
-                                    let maxRes = { width: size, height: size };
-                                    let curRes = { width: node.image.width, height: node.image.height };
-
-                                    //emulate the "object-fit: cover" property (so the image fills the desired maxWidth and maxHeight (it can be bigger, but the smallest side will equal the maxWidth or maxHeight))
-                                    //scale up if either side is smaller than the maxWidth or maxHeight
-                                    let fittedRes = fit(maxRes, curRes, 'cover');
-
-                                    let posX = node.x - fittedRes.width / 2;
-                                    // let posY = node.y - height / 2;
-                                    //align with top of the image instead of center (most images are taller and are portraits, we want to capture the face)
-                                    let posY = node.y - size / 2;
-
-                                    let textPosX = node.x;
-                                    let textPosY = node.y + size / 2;
-
-                                    // ctx.drawImage(node.image, posX, posY, width, height);
-
-                                    //mask the image to a circle
                                     ctx.save();
                                     ctx.beginPath();
                                     ctx.arc(node.x, node.y, size / 2, 0, Math.PI * 2, true);
                                     ctx.closePath();
                                     ctx.clip();
-                                    //draw light gray behind it
                                     ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-                                    ctx.fillRect(node.x - size / 2, node.y - size / 2, size, size);
-                                    //draw the image
-                                    ctx.drawImage(node.image, posX, posY, fittedRes.width, fittedRes.height);
+                                    ctx.fillRect(positionX, positionY, size, size);
+
+                                    if (!node.image_crop && node.image?.naturalWidth && node.image?.naturalHeight) {
+                                        node.image_crop = getImageCrop(node.image);
+                                    }
+
+                                    if (node.image_crop) {
+                                        ctx.drawImage(
+                                            node.image,
+                                            node.image_crop.sx,
+                                            node.image_crop.sy,
+                                            node.image_crop.sWidth,
+                                            node.image_crop.sHeight,
+                                            positionX,
+                                            positionY,
+                                            size,
+                                            size,
+                                        );
+                                    }
+
                                     ctx.restore();
 
-                                    //dont draw if zoomed out too much
-                                    if (globalScale < 0.5) return;
+                                    if (globalScale < NODE_LABEL_ZOOM_THRESHOLD) return;
 
-                                    const fontSize = (node.size || 16) / adjustedGlobalScale * 0.5;
+                                    const fontSize = Math.max(10 / globalScale, 4);
                                     ctx.font = `${fontSize}px Sans-Serif`;
-
-                                    const label = `${getGenderLabel(node.gender).symbol}${node.name}${node.age ? ` (${node.age})` : ''}`;
-
                                     ctx.fillStyle = 'white';
-                                    ctx.shadowColor = 'black';
-                                    ctx.shadowBlur = 2 / adjustedGlobalScale;
-                                    ctx.lineWidth = 1 / adjustedGlobalScale;
-                                    ctx.strokeText(label, textPosX, textPosY + 10);
-                                    ctx.shadowColor = 0;
-
                                     ctx.textAlign = 'center';
                                     ctx.textBaseline = 'middle';
-                                    ctx.fillText(label, textPosX, textPosY + 10);
-                                    ctx.restore();
+                                    ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+                                    ctx.shadowBlur = 6 / globalScale;
+                                    ctx.fillText(node.displayLabel, node.x, node.y + (size / 2) + (fontSize * 0.8));
+                                    ctx.shadowBlur = 0;
                                 }}
                                 onNodeClick={(node) => {
                                     navigate(`/characters/${node.id}`);
@@ -428,27 +465,21 @@ function RouteSourcesObject() {
                                 linkColor={(link) => link.color || 'white'}
                                 linkWidth={1}
                                 linkCurvature="curvature"
-                                // linkDirectionalArrowLength={6}
                                 zoomToFit={true}
-                                //nodeVal is used to set the size of the node, adjust to globalScale
-                                nodeVal={(node) => {
-                                    //get globalScale
-                                    const globalScale = fgRef.current?.zoom() || 1;
-                                    let adjustedGlobalScale = (globalScale * 2) / globalScale;
-                                    const size = (node.size || 16) / adjustedGlobalScale * 2;
-                                    return size;
-                                }}
+                                nodeVal={(node) => node.size || MIN_NODE_SIZE}
                                 onNodeDragEnd={(node) => {
                                     node.fx = node.x;
                                     node.fy = node.y;
                                 }}
-                                //small arrow at the end of the link
-                                //no arrow if the link has "same_labels" property set to true
-                                linkDirectionalArrowLength={link => link.same_labels ? 0 : 6}
+                                linkDirectionalArrowLength={link => link.same_labels ? 0 : 4}
                                 linkDirectionalArrowRelPos={1}
                                 linkDirectionalArrowColor={'color'}
                                 linkCanvasObjectMode={() => 'after'}
                                 linkCanvasObject={(link, ctx, globalScale) => {
+                                    if (globalScale < LINK_LABEL_ZOOM_THRESHOLD || !link.label) {
+                                        return;
+                                    }
+
                                     const MAX_FONT_SIZE = 12 / globalScale;
                                     const LABEL_NODE_MARGIN = 8 / globalScale;
 
@@ -457,34 +488,32 @@ function RouteSourcesObject() {
 
                                     if (typeof start !== 'object' || typeof end !== 'object') return;
 
-                                    const { source, target } = link;
-                                    const curvature = +link.curvature || 0.5; // default curvature
-                                    const cpX = (source.x + target.x) / 2 + (target.y - source.y) * curvature;
-                                    const cpY = (source.y + target.y) / 2 + (source.x - target.x) * curvature;
+                                    const relLink = { x: end.x - start.x, y: end.y - start.y };
+                                    const distance = Math.hypot(relLink.x, relLink.y);
+                                    if (!distance) {
+                                        return;
+                                    }
 
-                                    const getPoint = t => {
-                                        const x = Math.pow(1 - t, 2) * source.x + 2 * (1 - t) * t * cpX + Math.pow(t, 2) * target.x;
-                                        const y = Math.pow(1 - t, 2) * source.y + 2 * (1 - t) * t * cpY + Math.pow(t, 2) * target.y;
-                                        return { x, y };
+                                    const curvature = Number(link.curvature) || 0.5;
+                                    const textPos = {
+                                        x: (start.x + end.x) / 2 + (relLink.y * curvature * 0.5),
+                                        y: (start.y + end.y) / 2 - (relLink.x * curvature * 0.5),
                                     };
 
-                                    // Get midpoint (t = 0.5)
-                                    const textPos = getPoint(0.5);
-
-                                    const relLink = { x: end.x - start.x, y: end.y - start.y };
-
-                                    const maxTextLength = Math.sqrt(Math.pow(relLink.x, 2) + Math.pow(relLink.y, 2)) - LABEL_NODE_MARGIN * 2;
+                                    const maxTextLength = distance - LABEL_NODE_MARGIN * 2;
+                                    if (maxTextLength <= 0) {
+                                        return;
+                                    }
 
                                     let textAngle = Math.atan2(relLink.y, relLink.x);
-                                    // maintain label vertical orientation for legibility
                                     if (textAngle > Math.PI / 2) textAngle = -(Math.PI - textAngle);
                                     if (textAngle < -Math.PI / 2) textAngle = -(-Math.PI - textAngle);
 
-                                    // const label = `${link.labels.forward}`;
-                                    let label = `${link.label}`;
+                                    const fontSize = Math.min(MAX_FONT_SIZE, maxTextLength / (link.label_width || 1));
+                                    if (fontSize < MIN_LINK_FONT_SIZE) {
+                                        return;
+                                    }
 
-                                    ctx.font = '1px Sans-Serif';
-                                    const fontSize = Math.min(MAX_FONT_SIZE, maxTextLength / ctx.measureText(label).width);
                                     ctx.font = `${fontSize}px Sans-Serif`;
 
                                     ctx.save();
@@ -493,13 +522,11 @@ function RouteSourcesObject() {
 
                                     ctx.textAlign = 'center';
                                     ctx.textBaseline = 'middle';
-                                    // ctx.fillStyle = 'white';
-                                    //use line color
                                     ctx.fillStyle = link.color || 'white';
-                                    ctx.fillText(label, 0, 0);
+                                    ctx.fillText(link.label, 0, 0);
                                     ctx.restore();
                                 }}
-                                linkLineDash={link => link.dashed ? [4, 2] : undefined}
+                                linkLineDash={link => link.dashed ? DASHED_LINK_PATTERN : undefined}
                             />
                         </> :
                             <Typography variant="body1" component="p">No relationships found</Typography>
