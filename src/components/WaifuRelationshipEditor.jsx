@@ -23,33 +23,44 @@ function WaifuRelationshipEditor({ onReload, primaryCharacter }) {
                     tempId: index,
                 }
             });
-            console.log(_relationships);
             setRelationships(_relationships); // Set the relationships to the primary character's relationships
         }
 
-        // Fetch all sources individually (mostly it's just one source, so it's not a big deal)
+        // Fetch source data in parallel and merge unique characters.
         (async () => {
-            let _characters = [];
+            const uniqueCharacters = new Map();
             try {
-                // primaryCharacter?.sources?.forEach(async (source) => {
-                for (const source of primaryCharacter?.sources) {
-                    const id = source.id;
-                    const response = await fetch(`${getAPIUrl()}/sources/get/${id}`);
+                const sources = primaryCharacter?.sources || [];
+                const responses = await Promise.all(
+                    sources.map((source) => fetch(`${getAPIUrl()}/sources/get/${source.id}`))
+                );
+
+                const sourcePayloads = await Promise.all(responses.map(async (response) => {
                     if (response.status !== 200) {
                         throw new Error('Failed to fetch sources data');
                     }
+
                     const sourceData = await response.json();
                     if (!sourceData) {
                         throw new Error('No data found for the sources');
                     }
-                    _characters = [..._characters, ...sourceData.characters];
-                };
+
+                    return sourceData;
+                }));
+
+                sourcePayloads.forEach((sourceData) => {
+                    (sourceData.characters || []).forEach((character) => {
+                        if (!uniqueCharacters.has(character.id)) {
+                            uniqueCharacters.set(character.id, character);
+                        }
+                    });
+                });
             } catch (err) {
                 console.error('Error fetching data:', err);
                 ShowNotification(err.message, "error");
             }
 
-            _characters = _characters.filter((item, index) => _characters.findIndex(i => i.id === item.id) === index);
+            let _characters = [...uniqueCharacters.values()];
             _characters = _characters.filter((item) => item.id !== primaryCharacter.id);
             setRelatableCharacters(_characters);
         })();

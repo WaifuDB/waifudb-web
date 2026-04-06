@@ -294,14 +294,27 @@ export function reprocessRelationshipsForChart(relationships) {
     });
   });
 
-  processed = processed.filter((relationship, index, self) =>
-    index === self.findIndex((r) => {
-      return (
-        (r.from === relationship.from && r.to === relationship.to && r.labels.forward === relationship.labels.forward && r.labels.reverse === relationship.labels.reverse) ||
-        (r.from === relationship.to && r.to === relationship.from && r.labels.forward === relationship.labels.reverse && r.labels.reverse === relationship.labels.forward)
-      );
-    }),
-  );
+  const deduped = [];
+  const dedupeKeys = new Set();
+  processed.forEach((relationship) => {
+    const from = relationship.from;
+    const to = relationship.to;
+    const forward = relationship.labels.forward || '';
+    const reverse = relationship.labels.reverse || '';
+
+    const key = from <= to
+      ? `${from}|${to}|${forward}|${reverse}`
+      : `${to}|${from}|${reverse}|${forward}`;
+
+    if (dedupeKeys.has(key)) {
+      return;
+    }
+
+    dedupeKeys.add(key);
+    deduped.push(relationship);
+  });
+
+  processed = deduped;
 
   processed = processed.map((relationship) => {
     REMOVABLE_OPPOSITE_FRAGMENTS.forEach((removable) => {
