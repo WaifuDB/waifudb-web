@@ -1,13 +1,13 @@
-import { Avatar, Box, Button, Checkbox, Divider, FormControl, FormControlLabel, IconButton, InputLabel, MenuItem, Select, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, Checkbox, Divider, FormControlLabel, IconButton, Paper, Stack, TextField, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import { getGenderLabel, ShowNotification } from "../helpers/Misc";
 import { getAPIUrl } from "../helpers/API";
 import AddIcon from '@mui/icons-material/Add';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import axios from "axios";
 import { useAuth } from "../providers/AuthProvider";
 
 function WaifuRelationshipEditor({ onReload, primaryCharacter }) {
-    const [id, setId] = useState(null); // If ID is set, we are editing an existing relationship
     const [relationships, setRelationships] = useState([]);
     const { user, token } = useAuth(); // Get user_id and token from the primary character
 
@@ -115,90 +115,122 @@ function WaifuRelationshipEditor({ onReload, primaryCharacter }) {
         }
     }
 
+    const getCharacterRelationships = (characterId) => {
+        return relationships.filter((relationship) => relationship.from_id === characterId || relationship.to_id === characterId);
+    }
+
     return (
         <>
-            <Typography variant="h6" component="h2">
+            <Typography variant="h6" component="h2" sx={{ fontWeight: 700 }}>
                 Edit relationship for {primaryCharacter?.name}
             </Typography>
-            <Box sx={{ 
-                mt: 2, 
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                Add or update relationship labels in both directions for each character.
+            </Typography>
+            <Box sx={{
+                mt: 2,
                 maxHeight: '70vh',
                 overflowY: 'auto',
                 overflowX: 'hidden',
-                }}>
-                {/* select character */}
-                <Stack>
-                    {
-                        relatableCharacters.length > 0 && (
-                            <>
-                                {
-                                    relatableCharacters.map((character) => {
-                                        let primaryCharacterId = primaryCharacter.id;
-                                        let secondaryCharacterId = character.id;
-                                        if (primaryCharacterId > secondaryCharacterId) {
-                                            primaryCharacterId = character.id;
-                                            secondaryCharacterId = primaryCharacter.id;
-                                        }
-                                        return (<>
-                                            <Typography variant="h6" component="h2" key={character.id}>
-                                                {getGenderLabel(character.gender).symbol} {character.name}
-                                                <IconButton tabIndex="-1" size="small" color="primary" variant="outlined" sx={{ ml: 2 }} onClick={() => {
-                                                    //add empty relationship to the relationships array
-                                                    let _rel = {
-                                                        id: null,
-                                                        from_id: primaryCharacterId,
-                                                        to_id: secondaryCharacterId,
-                                                        relationship_type: null,
-                                                        reciprocal_relationship_type: null,
-                                                        tempId: relationships.length,
-                                                        visualize: true,
-                                                    }
+            }}>
+                <Stack spacing={2}>
+                    {relatableCharacters.length > 0 && relatableCharacters.map((character) => {
+                        const characterRelationships = getCharacterRelationships(character.id);
+                        let primaryCharacterId = primaryCharacter.id;
+                        let secondaryCharacterId = character.id;
+                        if (primaryCharacterId > secondaryCharacterId) {
+                            primaryCharacterId = character.id;
+                            secondaryCharacterId = primaryCharacter.id;
+                        }
 
-                                                    //just add it to the array, no need to check for duplicates (since values are null)
-                                                    setRelationships((prev) => {
-                                                        return [...prev, _rel]
-                                                    });
-                                                }}>
-                                                    <AddIcon />
-                                                </IconButton>
-                                                {/* list character relationships here, for now just a mockup we can reuse later */}
+                        return (
+                            <Paper key={character.id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                                <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between" spacing={1.5}>
+                                    <Typography variant="h6" component="h3" sx={{ fontSize: '1.05rem', fontWeight: 700 }}>
+                                        {getGenderLabel(character.gender).symbol} {character.name}
+                                    </Typography>
+                                    <Button
+                                        tabIndex="-1"
+                                        size="small"
+                                        variant="outlined"
+                                        startIcon={<AddIcon />}
+                                        onClick={() => {
+                                            // Add a blank relationship row and keep direction ordering deterministic.
+                                            let _rel = {
+                                                id: null,
+                                                from_id: primaryCharacterId,
+                                                to_id: secondaryCharacterId,
+                                                relationship_type: null,
+                                                reciprocal_relationship_type: null,
+                                                tempId: relationships.length,
+                                                visualize: true,
+                                            }
 
-                                                {/* prim character is {input} of sec character */}
-                                                {
-                                                    relationships.map((relationship) => {
-                                                        //if any of the ids match character.id
-                                                        if (relationship.from_id === character.id || relationship.to_id === character.id) {
-                                                            return (
-                                                                <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', mt: 2 }} key={relationship.tempId}>
-                                                                    <WaifuRelationshipEditorFields key={relationship.id} from_character={character} to_character={primaryCharacter} relationship={relationship.relationship_type} reciprocal_relationship={relationship.reciprocal_relationship_type} onUpdateValues={onUpdateRelationship} tempId={relationship.tempId} visualize={relationship.visualize} />
-                                                                    <Button tabIndex="-1" variant="outlined" color="error" size="small" sx={{ ml: 1 }} onClick={() => {
-                                                                        //remove relationship from the relationships array
-                                                                        setRelationships((prev) => {
-                                                                            return prev.filter((item) => item.tempId !== relationship.tempId);
-                                                                        });
-                                                                    }}>Remove</Button>
-                                                                </Box>
-                                                            )
-                                                        }
-                                                        return null;
-                                                    })
-                                                }
-                                            </Typography>
-                                        </>)
-                                    })
-                                }
-                            </>
+                                            setRelationships((prev) => {
+                                                return [...prev, _rel]
+                                            });
+                                        }}
+                                    >
+                                        Add Relationship
+                                    </Button>
+                                </Stack>
+
+                                <Stack spacing={1.5} sx={{ mt: 2 }}>
+                                    {characterRelationships.length === 0 && (
+                                        <Typography variant="body2" color="text.secondary">
+                                            No relationship rows yet.
+                                        </Typography>
+                                    )}
+
+                                    {characterRelationships.map((relationship) => {
+                                        return (
+                                            <Paper key={relationship.tempId} variant="outlined" sx={{ p: 1.5, borderRadius: 1.5, bgcolor: 'background.default' }}>
+                                                <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems={{ xs: 'stretch', md: 'center' }}>
+                                                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                                                        <WaifuRelationshipEditorFields
+                                                            key={relationship.id}
+                                                            from_character={character}
+                                                            to_character={primaryCharacter}
+                                                            relationship={relationship.relationship_type}
+                                                            reciprocal_relationship={relationship.reciprocal_relationship_type}
+                                                            onUpdateValues={onUpdateRelationship}
+                                                            tempId={relationship.tempId}
+                                                            visualize={relationship.visualize}
+                                                        />
+                                                    </Box>
+                                                    <Button
+                                                        tabIndex="-1"
+                                                        variant="outlined"
+                                                        color="error"
+                                                        size="small"
+                                                        startIcon={<DeleteOutlineIcon />}
+                                                        onClick={() => {
+                                                            setRelationships((prev) => {
+                                                                return prev.filter((item) => item.tempId !== relationship.tempId);
+                                                            });
+                                                        }}
+                                                    >
+                                                        Remove
+                                                    </Button>
+                                                </Stack>
+                                            </Paper>
+                                        )
+                                    })}
+                                </Stack>
+                            </Paper>
                         )
-                    }
+                    })}
                 </Stack>
             </Box>
             <Divider sx={{ my: 2 }} />
 
-            <Button variant="outlined" color="primary" size="small" sx={{ ml: 2 }} onClick={() => {
-                onUpdate();
-            }}>
-                Save
-            </Button>
+            <Stack direction="row" justifyContent="flex-end">
+                <Button variant="contained" color="primary" size="medium" onClick={() => {
+                    onUpdate();
+                }}>
+                    Save Relationships
+                </Button>
+            </Stack>
         </>
     );
 }
@@ -224,21 +256,20 @@ function WaifuRelationshipEditorFields({ tempId, visualize, from_character, to_c
     return (
         <Box sx={{
             display: 'flex',
-            flexDirection: 'row',
-            justifyContent: 'center',
+            flexDirection: { xs: 'column', xl: 'row' },
+            gap: 1.25,
         }}>
-            {/* center vertically */}
-            <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-                <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-                    <Typography variant="body1" component="p" sx={{ ml: 2 }}><b>{to_character.name}</b></Typography>
-                    <Typography variant="body1" component="p" sx={{ ml: 2 }}>→</Typography>
-                    <Typography variant="body1" component="p" sx={{ ml: 2 }}>{from_character.name}</Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', minWidth: 220 }}>
+                    <Typography variant="body2" component="p" sx={{ fontWeight: 700, mr: 1 }}>{to_character.name}</Typography>
+                    <Typography variant="body2" component="p" sx={{ color: 'text.secondary', mr: 1 }}>→</Typography>
+                    <Typography variant="body2" component="p" sx={{ color: 'text.secondary' }}>{from_character.name}</Typography>
                 </Box>
                 <TextField
                     size="small"
                     variant="outlined"
-                    placeholder="Relationship"
-                    sx={{ width: 'auto' }}
+                    placeholder="Type (e.g. friend, sibling)"
+                    sx={{ flex: 1, minWidth: 180 }}
                     value={relA?.label}
                     onChange={(e) => setRelA({
                         id: to_character.id,
@@ -246,17 +277,17 @@ function WaifuRelationshipEditorFields({ tempId, visualize, from_character, to_c
                     })}
                 />
             </Box>
-            <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-                <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-                    <Typography variant="body1" component="p" sx={{ ml: 2 }}>{from_character.name}</Typography>
-                    <Typography variant="body1" component="p" sx={{ ml: 2 }}>→</Typography>
-                    <Typography variant="body1" component="p" sx={{ ml: 2 }}><b>{to_character.name}</b></Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', minWidth: 220 }}>
+                    <Typography variant="body2" component="p" sx={{ color: 'text.secondary', mr: 1 }}>{from_character.name}</Typography>
+                    <Typography variant="body2" component="p" sx={{ color: 'text.secondary', mr: 1 }}>→</Typography>
+                    <Typography variant="body2" component="p" sx={{ fontWeight: 700 }}>{to_character.name}</Typography>
                 </Box>
                 <TextField
                     size="small"
                     variant="outlined"
-                    placeholder="Relationship"
-                    sx={{ width: 'auto' }}
+                    placeholder="Type (e.g. rival, mentor)"
+                    sx={{ flex: 1, minWidth: 180 }}
                     value={relB?.label}
                     onChange={(e) => setRelB({
                         id: from_character.id,
@@ -264,8 +295,7 @@ function WaifuRelationshipEditorFields({ tempId, visualize, from_character, to_c
                     })}
                 />
             </Box>
-            <Box>
-                {/* checkbox to toggle visualize on or off */}
+            <Box sx={{ display: 'flex', alignItems: 'center', pl: { xs: 0, xl: 1 } }}>
                 <FormControlLabel control={<Checkbox tabIndex="-1" checked={isVisualize} onChange={(e) => setIsVisualize(e.target.checked)} />} label="Visualize" />
             </Box>
         </Box>
