@@ -11,7 +11,7 @@ function RouteSourcesList() {
   useEffect(() => {
     (async () => {
       try {
-        const response = await axios.get(`${getAPIUrl()}/sources/get/all`);
+        const response = await axios.get(`${getAPIUrl()}/sources/get/all/compact`);
         if (response.status !== 200) {
           throw new Error('Failed to fetch sources data');
         }
@@ -58,7 +58,7 @@ function RouteSourcesList() {
               {data[key].map((source) => (
                 <Link key={source.id} to={`/sources/${source.id}`} style={{ textDecoration: 'none' }}>
                   <Typography variant="body1" component="p">
-                    {source.name} ({source.characters?.length})
+                    {source.name} ({source.character_count || 0})
                   </Typography>
                 </Link>
               ))}

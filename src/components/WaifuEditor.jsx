@@ -50,7 +50,7 @@ function WaifuEditor(props) {
     const reloadSources = async () => {
         setIsLoading(true);
         try {
-            const response = await axios.get(`${getAPIUrl()}/sources/get/all`);
+            const response = await axios.get(`${getAPIUrl()}/sources/get/all/compact`);
             if (response.status !== 200) {
                 throw new Error('Failed to fetch sources');
             }
