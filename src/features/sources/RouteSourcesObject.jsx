@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import ForceGraph2D from 'react-force-graph-2d';
 import { useResizeDetector } from 'react-resize-detector';
@@ -150,8 +150,12 @@ function RouteSourcesObject() {
     }
   };
 
-  const sortedRelPairs = data
-    ? [...buildRelationshipPairs(data.characters)].sort((a, b) => {
+  const relationshipPairs = useMemo(() => {
+    return data ? buildRelationshipPairs(data.characters) : [];
+  }, [data]);
+
+  const sortedRelPairs = useMemo(() => {
+    return [...relationshipPairs].sort((a, b) => {
         let cmp = 0;
         if (relSortField === 'moral_risk') {
           cmp = a.moralRisk.total - b.moralRisk.total;
@@ -165,8 +169,8 @@ function RouteSourcesObject() {
         }
         if (relSortField === 'age_gap') return cmp;
         return relSortDir === 'asc' ? cmp : -cmp;
-      }).filter((pair) => pair.moralRisk.total > 0)
-    : [];
+      }).filter((pair) => pair.moralRisk.total > 0);
+  }, [relationshipPairs, relSortDir, relSortField]);
 
   if (isLoading || !data) {
     return <div>Loading...</div>;
