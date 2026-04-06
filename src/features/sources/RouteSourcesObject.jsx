@@ -82,6 +82,7 @@ function RouteSourcesObject() {
   const [relSortField, setRelSortField] = useState('moral_risk');
   const [relSortDir, setRelSortDir] = useState('desc');
   const [showRiskDebug, setShowRiskDebug] = useState(false);
+  const isRelationshipsTab = activeTab === 2;
 
   const loadSource = async () => {
     try {
@@ -99,7 +100,7 @@ function RouteSourcesObject() {
       sourcesData.characters.sort((a, b) => (b.relationships?.length || 0) - (a.relationships?.length || 0));
 
       setData(sourcesData);
-      setRelationshipData(buildRelationshipDataFromSource(sourcesData, fgRef));
+      setRelationshipData(null);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -141,6 +142,14 @@ function RouteSourcesObject() {
     })();
   }, [id]);
 
+  useEffect(() => {
+    if (!isRelationshipsTab || !data || relationshipData) {
+      return;
+    }
+
+    setRelationshipData(buildRelationshipDataFromSource(data, fgRef));
+  }, [data, isRelationshipsTab, relationshipData]);
+
   const handleRelSort = (field) => {
     if (relSortField === field) {
       setRelSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
@@ -151,8 +160,12 @@ function RouteSourcesObject() {
   };
 
   const relationshipPairs = useMemo(() => {
-    return data ? buildRelationshipPairs(data.characters) : [];
-  }, [data]);
+    if (!isRelationshipsTab || !data) {
+      return [];
+    }
+
+    return buildRelationshipPairs(data.characters);
+  }, [data, isRelationshipsTab]);
 
   const sortedRelPairs = useMemo(() => {
     return [...relationshipPairs].sort((a, b) => {

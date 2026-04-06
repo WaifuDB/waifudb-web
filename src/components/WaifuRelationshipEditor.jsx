@@ -32,7 +32,7 @@ function WaifuRelationshipEditor({ onReload, primaryCharacter }) {
             try {
                 const sources = primaryCharacter?.sources || [];
                 const responses = await Promise.all(
-                    sources.map((source) => fetch(`${getAPIUrl()}/sources/get/${source.id}`))
+                    sources.map((source) => fetch(`${getAPIUrl()}/sources/get/${source.id}/characters`))
                 );
 
                 const sourcePayloads = await Promise.all(responses.map(async (response) => {
@@ -40,16 +40,16 @@ function WaifuRelationshipEditor({ onReload, primaryCharacter }) {
                         throw new Error('Failed to fetch sources data');
                     }
 
-                    const sourceData = await response.json();
-                    if (!sourceData) {
+                    const sourceCharacters = await response.json();
+                    if (!sourceCharacters) {
                         throw new Error('No data found for the sources');
                     }
 
-                    return sourceData;
+                    return sourceCharacters;
                 }));
 
-                sourcePayloads.forEach((sourceData) => {
-                    (sourceData.characters || []).forEach((character) => {
+                sourcePayloads.forEach((sourceCharacters) => {
+                    (sourceCharacters || []).forEach((character) => {
                         if (!uniqueCharacters.has(character.id)) {
                             uniqueCharacters.set(character.id, character);
                         }
