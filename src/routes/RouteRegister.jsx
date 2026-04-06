@@ -1,4 +1,4 @@
-import { Box, Button, Container, TextField, Typography } from "@mui/material";
+import { Box, Button, Container, Paper, Stack, TextField, Typography } from "@mui/material";
 import { useState } from "react";
 import { getAPIUrl } from "../helpers/API";
 import { ShowNotification } from "../helpers/Misc";
@@ -65,42 +65,52 @@ function RouteRegister() {
     return (
         <Box>
             <Container maxWidth="sm" sx={{ mt: 4, mb: 4 }}>
-                <Typography variant="h4" component="h1" gutterBottom>
-                    Register
-                </Typography>
-                <Box component="form" noValidate autoComplete="off" sx={{ mt: 2 }}>
-                    <TextField
-                        disabled={isWorking}
-                        label="Username"
-                        variant="outlined"
-                        fullWidth
-                        margin="normal"
-                        value={inputUsername}
-                        onChange={(e) => setInputUsername(e.target.value)}
-                    />
-                    <TextField
-                        disabled={isWorking}
-                        label="Password"
-                        type="password"
-                        variant="outlined"
-                        fullWidth
-                        margin="normal"
-                        value={inputPassword}
-                        onChange={(e) => setInputPassword(e.target.value)}
-                    />
-                    <TextField
-                        disabled={isWorking}
-                        label="Confirm Password"
-                        type="password"
-                        variant="outlined"
-                        fullWidth
-                        margin="normal"
-                        value={inputPasswordConfirm}
-                        onChange={(e) => setInputPasswordConfirm(e.target.value)}
-                    />
+                <Paper elevation={1} sx={{ p: { xs: 2.5, md: 4 }, borderRadius: '28px' }}>
+                    <Stack spacing={2.5}>
+                        <Box>
+                            <Typography variant="overline" color="text.secondary">New account</Typography>
+                            <Typography variant="h4" component="h1" gutterBottom>
+                                Register
+                            </Typography>
+                            <Typography color="text.secondary">
+                                Create an account to contribute records and manage uploads.
+                            </Typography>
+                        </Box>
+                        <Box component="form" noValidate autoComplete="off">
+                            <TextField
+                                disabled={isWorking}
+                                label="Username"
+                                variant="outlined"
+                                fullWidth
+                                margin="normal"
+                                value={inputUsername}
+                                onChange={(e) => setInputUsername(e.target.value)}
+                            />
+                            <TextField
+                                disabled={isWorking}
+                                label="Password"
+                                type="password"
+                                variant="outlined"
+                                fullWidth
+                                margin="normal"
+                                value={inputPassword}
+                                onChange={(e) => setInputPassword(e.target.value)}
+                            />
+                            <TextField
+                                disabled={isWorking}
+                                label="Confirm Password"
+                                type="password"
+                                variant="outlined"
+                                fullWidth
+                                margin="normal"
+                                value={inputPasswordConfirm}
+                                onChange={(e) => setInputPasswordConfirm(e.target.value)}
+                            />
 
-                    <Button disabled={isWorking} variant="contained" color="primary" fullWidth sx={{ mt: 2 }} onClick={onRegister}>Register</Button>
-                </Box>
+                            <Button disabled={isWorking} variant="contained" color="primary" fullWidth sx={{ mt: 2 }} onClick={onRegister}>Register</Button>
+                        </Box>
+                    </Stack>
+                </Paper>
             </Container>
         </Box>
     );

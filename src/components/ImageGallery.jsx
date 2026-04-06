@@ -16,7 +16,7 @@ import {
     Tooltip,
     Typography,
 } from "@mui/material";
-import { alpha, useTheme } from "@mui/material/styles";
+import { useTheme } from "@mui/material/styles";
 import { useState } from "react";
 
 const PRIORITY_METADATA_KEYS = [
@@ -163,7 +163,7 @@ function ImageGallery({ image_data, columns = 8 }) {
                 closeAfterTransition
                 sx={{
                     backdropFilter: 'blur(10px)',
-                    backgroundColor: alpha(theme.palette.background.default, 0.72),
+                    backgroundColor: 'rgba(0,0,0,0.6)',
                     p: { xs: 1.5, md: 3 },
                 }}
             >
@@ -222,17 +222,9 @@ function ImageViewer({ item, onClose }) {
     const { fullUrl } = getImageUrls(item);
     const metadata = buildMetadata(item);
     const isDarkMode = theme.palette.mode === 'dark';
-
-    const surfaceBackground = `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.98)} 0%, ${alpha(theme.palette.background.default, 0.96)} 100%)`;
-    const sidebarBackground = `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.94)} 0%, ${alpha(theme.palette.background.default, 0.9)} 100%)`;
-    const stageBackground = isDarkMode
-        ? `radial-gradient(circle at top, ${alpha(theme.palette.primary.dark, 0.34)} 0%, ${alpha(theme.palette.background.default, 0.86)} 45%, ${alpha(theme.palette.common.black, 0.92)} 100%)`
-        : `radial-gradient(circle at top, ${alpha(theme.palette.primary.light, 0.3)} 0%, ${alpha(theme.palette.background.default, 0.72)} 45%, ${alpha(theme.palette.grey[300], 0.84)} 100%)`;
-    const frameBackground = alpha(theme.palette.background.paper, isDarkMode ? 0.2 : 0.42);
-    const frameBorder = alpha(theme.palette.common.white, isDarkMode ? 0.12 : 0.72);
-    const innerShadow = isDarkMode
-        ? `inset 0 1px 0 ${alpha(theme.palette.common.white, 0.08)}`
-        : `inset 0 1px 0 ${alpha(theme.palette.common.white, 0.42)}`;
+    const surfaceBackground = theme.palette.background.paper;
+    const sidebarBackground = isDarkMode ? '#35363A' : theme.palette.grey[100];
+    const stageBackground   = isDarkMode ? '#18191C' : '#F0F0F0';
 
     return <>
         <Paper
@@ -244,14 +236,11 @@ function ImageViewer({ item, onClose }) {
                 width: { xs: 'calc(100% - 24px)', md: 'min(1200px, 92vw)' },
                 height: { xs: 'calc(100% - 24px)', md: 'min(820px, 92vh)' },
                 overflow: 'hidden',
-                borderRadius: 4,
-                border: '1px solid',
-                borderColor: alpha(theme.palette.divider, 0.9),
+                borderRadius: '28px',
+                border: 'none',
                 color: theme.palette.text.primary,
                 background: surfaceBackground,
-                boxShadow: isDarkMode
-                    ? `0 28px 96px ${alpha(theme.palette.common.black, 0.52)}`
-                    : `0 24px 80px ${alpha(theme.palette.common.black, 0.28)}`,
+                boxShadow: '0 3px 5px -1px rgba(0,0,0,0.2), 0 6px 10px rgba(0,0,0,0.14), 0 1px 18px rgba(0,0,0,0.12)',
             }}
         >
             <Grid container sx={{ height: '100%' }}>
@@ -260,9 +249,8 @@ function ImageViewer({ item, onClose }) {
                     size={{ xs: 12, md: 4 }}
                     sx={{
                         height: { xs: 'auto', md: '100%' },
-                        borderRight: { xs: 'none', md: '1px solid' },
-                        borderBottom: { xs: '1px solid', md: 'none' },
-                        borderColor: alpha(theme.palette.divider, 0.85),
+                        borderRight: { xs: 'none', md: `1px solid ${theme.palette.divider}` },
+                        borderBottom: { xs: `1px solid ${theme.palette.divider}`, md: 'none' },
                         background: sidebarBackground,
                     }}
                 >
@@ -314,9 +302,9 @@ function ImageViewer({ item, onClose }) {
                                 variant='outlined'
                                 sx={{
                                     p: 1.25,
-                                    borderRadius: 3,
-                                    backgroundColor: alpha(theme.palette.background.paper, isDarkMode ? 0.52 : 0.82),
-                                    borderColor: alpha(theme.palette.divider, 0.72),
+                                    borderRadius: 2,
+                                    backgroundColor: sidebarBackground,
+                                    borderColor: theme.palette.divider,
                                 }}
                             >
                                 <Stack direction='row' spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
@@ -377,11 +365,6 @@ function ImageViewer({ item, onClose }) {
                             display: 'flex',
                             justifyContent: 'center',
                             alignItems: 'center',
-                            borderRadius: 3,
-                            border: '1px solid',
-                            borderColor: frameBorder,
-                            backgroundColor: frameBackground,
-                            boxShadow: innerShadow,
                             overflow: 'hidden',
                         }}
                     >

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, CardContent, CssBaseline, Paper, ThemeProvider } from '@mui/material';
+import { Box, CssBaseline, ThemeProvider } from '@mui/material';
 import { Routes } from 'react-router';
 import { ToastContainer } from 'react-toastify';
 import './App.css';
@@ -18,23 +18,16 @@ function App() {
   return (
     <ThemeProvider theme={appTheme}>
       <CssBaseline />
-      <ToastContainer hideProgressBar />
-      <Box>
+      <ToastContainer hideProgressBar theme="dark" />
+      <Box className="app-shell">
         <Header />
-      </Box>
-      <Paper
-        sx={{
-          borderRadius: 0,
-        }}
-      >
-        <CardContent>
-          <Routes>
-            {appRoutes.map((route) => renderRoute(route))}
-          </Routes>
-        </CardContent>
-      </Paper>
-      <Box sx={{ pb: 2 }}>
-        {/* <Footer /> */}
+        <Box component="main" className="app-main">
+          <Box className="app-surface">
+            <Routes>
+              {appRoutes.map((route) => renderRoute(route))}
+            </Routes>
+          </Box>
+        </Box>
       </Box>
     </ThemeProvider>
   );
