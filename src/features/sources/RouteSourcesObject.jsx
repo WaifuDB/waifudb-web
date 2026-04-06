@@ -87,7 +87,7 @@ function RouteSourcesObject() {
   const loadSource = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get(`${getAPIUrl()}/sources/get/${id}`);
+      const response = await axios.get(`${getAPIUrl()}/sources/get/${id}?include_relationship_characters=false`);
       if (response.status !== 200) {
         throw new Error('Failed to fetch sources data');
       }

@@ -2,6 +2,22 @@ import { getGenderLabel, getRelationshipType, reprocessRelationshipsForChart } f
 import { MAX_NODE_SIZE, MIN_NODE_SIZE } from './constants';
 import { getCharacterImageUrl, measureLabelWidth } from './graphUtils';
 
+const IMAGE_CACHE = new Map();
+
+function getCachedGraphImage(imageUrl) {
+  if (IMAGE_CACHE.has(imageUrl)) {
+    return IMAGE_CACHE.get(imageUrl);
+  }
+
+  const image = new Image();
+  image.crossOrigin = 'anonymous';
+  image.decoding = 'async';
+  image.src = imageUrl;
+  IMAGE_CACHE.set(imageUrl, image);
+
+  return image;
+}
+
 export function buildRelationshipDataFromSource(sourcesData, fgRef) {
   const relData = {
     characters: [],
@@ -15,18 +31,26 @@ export function buildRelationshipDataFromSource(sourcesData, fgRef) {
     return relData;
   }
 
+  let refreshScheduled = false;
+  const scheduleRefresh = () => {
+    if (refreshScheduled) {
+      return;
+    }
+
+    refreshScheduled = true;
+    requestAnimationFrame(() => {
+      refreshScheduled = false;
+      fgRef.current?.refresh();
+    });
+  };
+
   for (const character of sourcesData.characters) {
     const imageUrl = getCharacterImageUrl(character.remote_image_id);
-    const image = new Image();
-    image.crossOrigin = 'anonymous';
-    image.decoding = 'async';
-    image.onload = () => {
-      fgRef.current?.refresh();
-    };
-    image.onerror = () => {
-      fgRef.current?.refresh();
-    };
-    image.src = imageUrl;
+    const image = getCachedGraphImage(imageUrl);
+    if (!image.complete) {
+      image.addEventListener('load', scheduleRefresh, { once: true });
+      image.addEventListener('error', scheduleRefresh, { once: true });
+    }
 
     const genderLabel = getGenderLabel(character.gender);
 
